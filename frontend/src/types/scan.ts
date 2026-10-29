@@ -482,3 +482,61 @@ export type ApiError = {
   detail: string;
   target_domain?: string;
 };
+
+// ==============================================================================
+// PHASE 4C: WHAT-IF POST-QUANTUM MIGRATION SIMULATOR TYPES
+// ==============================================================================
+
+export type MigrationComponent =
+  | 'KEY_WRAPPING'
+  | 'AUTHENTICATION'
+  | 'TLS_PROTOCOL'
+  | 'TLS_KEY_EXCHANGE';
+
+export type MigrationAction = {
+  component: MigrationComponent;
+  current_algorithm?: string;
+  target_algorithm: string;
+  description?: string;
+};
+
+export type WhatIfMigrationComparison = {
+  priority_score_before: number;
+  priority_score_after: number;
+  priority_score_delta: number;
+  risk_reduction: number;
+  priority_band_before: MigrationPriority;
+  priority_band_after: MigrationPriority;
+  priority_transition: string;
+  key_chain_status_before: KeyChainStatus;
+  key_chain_status_after: KeyChainStatus;
+  key_chain_transition: string;
+  technical_risk_before: TechnicalRiskContext;
+  technical_risk_after: TechnicalRiskContext;
+  weak_links_before: string[];
+  weak_links_after: string[];
+  resolved_findings: string[];
+  remaining_findings: string[];
+  newly_introduced_findings?: string[];
+};
+
+export type WhatIfMigrationRequest = {
+  asset_id?: string;
+  asset?: BankingAsset;
+  scan_quantum_score?: number;
+  changes: MigrationAction[];
+};
+
+export type WhatIfMigrationResult = {
+  simulation_id: string;
+  asset_id: string;
+  asset_name: string;
+  evidence_state: string;
+  simulation_disclaimer: string;
+  operations: MigrationAction[];
+  before: BankingRiskAssessment;
+  after: BankingRiskAssessment;
+  comparison: WhatIfMigrationComparison;
+  explanation: string;
+  created_at: string;
+};

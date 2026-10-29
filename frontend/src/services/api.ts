@@ -1,4 +1,11 @@
-import type { ScanResponse, ApiError, BankingSystemProfile, BankingRiskAssessment } from '../types/scan';
+import type {
+  ScanResponse,
+  ApiError,
+  BankingSystemProfile,
+  BankingRiskAssessment,
+  WhatIfMigrationRequest,
+  WhatIfMigrationResult,
+} from '../types/scan';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -128,6 +135,44 @@ export async function getBankingProfileRisk(id: string): Promise<BankingRiskAsse
 
   if (!response.ok) {
     throw new Error(`Failed to fetch risk for profile ${id}: HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function simulateMigration(
+  request: WhatIfMigrationRequest
+): Promise<WhatIfMigrationResult> {
+  const url = `${API_BASE}/api/banking/risk/what-if`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+  } catch (err: any) {
+    try {
+      response = await fetch('http://127.0.0.1:8000/api/banking/risk/what-if', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+    } catch {
+      throw new Error('Unable to connect to QuantumShield migration simulation service.');
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || `Migration simulation failed with HTTP ${response.status}`
+    );
   }
 
   return response.json();

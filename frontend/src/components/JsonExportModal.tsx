@@ -34,24 +34,24 @@ export const JsonExportModal: React.FC<JsonExportModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-4xl rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 max-h-[90vh] flex flex-col space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="relative w-full max-w-4xl rounded-2xl bg-white border border-slate-200 shadow-2xl p-6 sm:p-8 max-h-[90vh] flex flex-col space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-white font-mono">Structured Assessment JSON Report</h2>
-            <p className="text-xs text-slate-400">Target: {data.target.domain}</p>
+            <h2 className="text-lg font-semibold text-slate-900 font-mono">Structured Assessment JSON Report</h2>
+            <p className="text-xs text-slate-500">Target: {data.target.domain}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Code Viewer */}
-        <div className="flex-1 overflow-auto rounded-xl bg-slate-950 p-4 border border-slate-800 font-mono text-xs text-slate-300">
+        <div className="flex-1 overflow-auto rounded-xl bg-slate-50 p-4 border border-slate-200 font-mono text-xs text-slate-800">
           <pre className="whitespace-pre">{jsonString}</pre>
         </div>
 
@@ -63,14 +63,14 @@ export const JsonExportModal: React.FC<JsonExportModalProps> = ({ isOpen, onClos
           <div className="flex items-center space-x-2">
             <button
               onClick={handleCopy}
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition cursor-pointer"
+              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition cursor-pointer"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
               <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
             </button>
             <button
               onClick={handleDownload}
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition cursor-pointer"
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-[#18181B] hover:bg-black text-white font-medium text-xs transition cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download File</span>

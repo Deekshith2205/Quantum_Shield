@@ -230,7 +230,15 @@ Dashboard available at: `http://127.0.0.1:5173`
 pytest
 ```
 
-Includes **196 passing unit, integration, and security tests** covering:
+Includes **222 passing unit, integration, and security tests** covering:
+- What-If Post-Quantum Migration Simulator (`app.services.migration_simulator`, `app.models.simulation`)
+- Zero-mutation deep-copy semantics and profile immutability
+- Strict migration target algorithm allow-list and validation rejection (422)
+- Recomputing Phase 4B risk formula on hypothetical states ($BEF, TRF, M_{\text{norm}}$)
+- Delta calculations: score delta, risk reduction, priority band transition, key chain transition
+- Partial migration vs full stack migration: resolving key wrapping while preserving residual authentication findings
+- `SIMULATED` evidence state discipline preventing conflation with observed or deployed reality
+- What-If API endpoint (`POST /api/banking/risk/what-if`) contract verification
 - Banking Criticality + Key-Protection Risk Engine (`app.services.banking_risk_engine`)
 - Deterministic multi-dimensional migration prioritization formula ($BEF, TRF, M_{\text{norm}}$)
 - SNDL (Store Now, Decrypt Later) data lifetime weighting (VERY_LONG outranks SHORT)
@@ -264,7 +272,7 @@ Includes **196 passing unit, integration, and security tests** covering:
 - X.509 certificate parsing (RSA, ECDSA curves, Ed25519, expired certs, trust chains)
 - Cryptographic normalization (TLS 1.2 vs TLS 1.3, AES-128 vs AES-256)
 - Deterministic Quantum Risk Engine & Readiness Scoring (0–100)
-- FastAPI endpoints (`/api/scan`, `/api/audit`, `/api/health`, `/api/banking/risk`) and contract verification
+- FastAPI endpoints (`/api/scan`, `/api/audit`, `/api/health`, `/api/banking/risk`, `/api/banking/risk/what-if`) and contract verification
 
 ---
 
@@ -327,7 +335,86 @@ The engine inspects the complete 4-tier cryptographic key hierarchy:
 
 ---
 
-## 10. Standards Alignment
+## 10. What-If Post-Quantum Migration Simulator (Phase 4C)
+
+The **What-If Migration Simulator** allows security architects and audit teams to answer:
+> **"What happens to this banking system's risk if we replace a vulnerable cryptographic mechanism with a post-quantum standard?"**
+
+It allows evaluating the impact of proposed migrations prior to committing capital or engineering effort.
+
+### Architectural Principles & Core Guarantees:
+
+1. **Zero-Mutation Semantics (Immutability)**:
+   The simulator never mutates the original `BankingAsset` or persistent system profiles. All hypothetical substitutions are applied to an isolated deep copy (`copy.deepcopy`) in memory. The original baseline profile remains unchanged.
+2. **Formula Reuse Without Ad-Hoc Adjustments**:
+   The simulated asset is evaluated directly through the deterministic Phase 4B risk engine (`evaluate_banking_risk`). There are no hard-coded score reductions (e.g. `score -= 20`); the delta is derived strictly from recomputed $BEF$, $TRF$, and $M_{\text{norm}}$.
+3. **Strict Target Algorithm Allow-List**:
+   Arbitrary string inputs are rejected with HTTP 422. Only validated post-quantum and hybrid algorithms are permitted:
+   - **Key Wrapping**: `ML-KEM-768`, `ML-KEM-1024`, `X25519MLKEM768`, `AES-256-KW`
+   - **Authentication**: `ML-DSA-65`, `ML-DSA-87`, `SLH-DSA-128s`, `SLH-DSA-128f`
+   - **TLS Protocol**: `TLSv1.3`
+   - **TLS Key Exchange**: `X25519MLKEM768`, `X448MLKEM1024`, `SecP256r1MLKEM768`
+4. **Bounded Operations**:
+   Each simulation request enforces a strict bound of 1 to 5 substitution operations.
+5. **Explicit `SIMULATED` Provenance**:
+   Simulated outcomes are explicitly labeled with `evidence_state="SIMULATED"`, accompanied by a standard simulation disclaimer to prevent conflation with live observed reality (`OBSERVED`) or deployed controls (`OPERATOR_DECLARED`).
+6. **Residual Weakness Reporting**:
+   Migrating one component (e.g. RSA key wrapping $\to$ ML-KEM-768) resolves that specific vulnerability while keeping unmigrated components (e.g. RSA-2048 root authentication signatures) visible under `remaining_findings`.
+
+### What-If Simulation API
+
+```http
+POST /api/banking/risk/what-if
+Content-Type: application/json
+
+{
+  "asset_id": "BANK-PROF-CORE-BANKING",
+  "changes": [
+    {
+      "component": "KEY_WRAPPING",
+      "target_algorithm": "ML-KEM-768",
+      "description": "Migrate asymmetric key wrapping to NIST FIPS 203 ML-KEM-768"
+    }
+  ]
+}
+```
+
+#### Simulation Response:
+
+```json
+{
+  "simulation_id": "SIM-469145B1",
+  "asset_id": "BANK-PROF-CORE-BANKING",
+  "asset_name": "Core Banking Account Engine",
+  "evidence_state": "SIMULATED",
+  "simulation_disclaimer": "HYPOTHETICAL SIMULATION ONLY: This simulation models theoretical risk reduction and does not represent deployed cryptographic changes.",
+  "before": {
+    "priority_score": 92,
+    "migration_priority": "P0",
+    "key_protection": { "status": "QUANTUM_EXPOSED" }
+  },
+  "after": {
+    "priority_score": 23,
+    "migration_priority": "P3",
+    "key_protection": { "status": "PARTIALLY_QUANTUM_READY" }
+  },
+  "comparison": {
+    "priority_score_before": 92,
+    "priority_score_after": 23,
+    "priority_score_delta": -69,
+    "risk_reduction": 69,
+    "priority_transition": "P0 -> P3",
+    "key_chain_transition": "QUANTUM_EXPOSED -> PARTIALLY_QUANTUM_READY",
+    "resolved_findings": ["RSA-2048 key wrapping"],
+    "remaining_findings": ["RSA-2048 root authentication"]
+  },
+  "explanation": "Hypothetical migration simulation for Core Banking Account Engine: ..."
+}
+```
+
+---
+
+## 11. Standards Alignment
 
 - **NIST FIPS 203**: Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM / Kyber)
 - **NIST FIPS 204**: Module-Lattice-Based Digital Signature Standard (ML-DSA / Dilithium)

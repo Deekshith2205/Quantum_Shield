@@ -41,28 +41,28 @@ export const ObservabilityNotes: React.FC<ObservabilityNotesProps> = ({ scope, n
       ];
 
   return (
-    <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-6 space-y-5 shadow-xl">
-      <div className="flex items-center space-x-2 pb-2 border-b border-slate-800">
-        <HelpCircle className="w-5 h-5 text-cyan-400" />
-        <h2 className="text-lg font-bold text-white tracking-wide font-mono">
+    <div className="rounded-2xl bg-white border border-slate-200/90 p-6 space-y-5 shadow-xs">
+      <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
+        <HelpCircle className="w-5 h-5 text-[#5755D9]" />
+        <h2 className="text-lg font-bold text-slate-900 tracking-tight font-mono">
           WHAT QUANTUMSHIELD CAN OBSERVE
         </h2>
       </div>
-      <p className="text-xs text-slate-400 leading-relaxed">
+      <p className="text-xs text-slate-500 leading-relaxed">
         To maintain strict technical rigor, QuantumShield evaluates exclusively publicly observable parameters obtained from external TLS connections and leaf certificates. Internal, proprietary, or host-bound cryptography is never guessed.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
         {/* Column 1: Observed Externally */}
-        <div className="p-4 rounded-xl bg-slate-950/60 border border-emerald-900/40 space-y-2.5">
-          <div className="flex items-center space-x-1.5 text-emerald-400 font-bold uppercase text-[11px]">
-            <Eye className="w-3.5 h-3.5" />
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div className="flex items-center space-x-1.5 text-emerald-800 font-bold uppercase text-[11px]">
+            <Eye className="w-3.5 h-3.5 text-emerald-600" />
             <span>Observed Externally</span>
           </div>
-          <ul className="space-y-1.5 text-slate-300 text-[11px]">
+          <ul className="space-y-1.5 text-slate-700 text-[11px]">
             {observedList.map((item, idx) => (
               <li key={idx} className="flex items-start space-x-1.5">
-                <span className="text-emerald-500 font-bold">&bull;</span>
+                <span className="text-emerald-600 font-bold">&bull;</span>
                 <span className="leading-tight">{item}</span>
               </li>
             ))}
@@ -70,14 +70,14 @@ export const ObservabilityNotes: React.FC<ObservabilityNotesProps> = ({ scope, n
         </div>
 
         {/* Column 2: Potentially Inferred */}
-        <div className="p-4 rounded-xl bg-slate-950/60 border border-amber-900/40 space-y-2.5">
-          <div className="flex items-center space-x-1.5 text-amber-400 font-bold uppercase text-[11px]">
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div className="flex items-center space-x-1.5 text-amber-800 font-bold uppercase text-[11px]">
             <span>Potentially Inferred</span>
           </div>
-          <ul className="space-y-1.5 text-slate-300 text-[11px]">
+          <ul className="space-y-1.5 text-slate-700 text-[11px]">
             {inferredList.map((item, idx) => (
               <li key={idx} className="flex items-start space-x-1.5">
-                <span className="text-amber-500 font-bold">&bull;</span>
+                <span className="text-amber-600 font-bold">&bull;</span>
                 <span className="leading-tight">{item}</span>
               </li>
             ))}
@@ -88,20 +88,20 @@ export const ObservabilityNotes: React.FC<ObservabilityNotesProps> = ({ scope, n
         </div>
 
         {/* Column 3: Not Externally Observable */}
-        <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
-          <div className="flex items-center space-x-1.5 text-slate-400 font-bold uppercase text-[11px]">
-            <EyeOff className="w-3.5 h-3.5" />
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div className="flex items-center space-x-1.5 text-slate-600 font-bold uppercase text-[11px]">
+            <EyeOff className="w-3.5 h-3.5 text-slate-400" />
             <span>Not Externally Observable</span>
           </div>
-          <ul className="space-y-1.5 text-slate-400 text-[11px]">
+          <ul className="space-y-1.5 text-slate-600 text-[11px]">
             {unobservableList.map((item, idx) => (
               <li key={idx} className="flex items-start space-x-1.5">
-                <span className="text-slate-600 font-bold">&bull;</span>
+                <span className="text-slate-400 font-bold">&bull;</span>
                 <span className="leading-tight">{item}</span>
               </li>
             ))}
           </ul>
-          <p className="text-[10px] text-slate-500 pt-1">
+          <p className="text-[10px] text-slate-400 pt-1">
             *External scans cannot assess internal host components. Lack of visibility is not proof of insecurity.
           </p>
         </div>

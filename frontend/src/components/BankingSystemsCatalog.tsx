@@ -16,6 +16,7 @@ import {
 
 interface BankingSystemsCatalogProps {
   onAuditProfile: (profileId: string, suggestedDomain?: string) => void;
+  onSimulateProfile?: (profileId: string) => void;
 }
 
 const PROFILE_DEFAULT_DOMAINS: Record<string, string> = {
@@ -26,7 +27,10 @@ const PROFILE_DEFAULT_DOMAINS: Record<string, string> = {
   'BANK-PROF-ATM-NETWORK': 'api.chase.com',
 };
 
-export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ onAuditProfile }) => {
+export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({
+  onAuditProfile,
+  onSimulateProfile,
+}) => {
   const [profiles, setProfiles] = useState<BankingAsset[]>([]);
   const [risks, setRisks] = useState<Record<string, BankingRiskAssessment>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -83,57 +87,57 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header & Disclaimer */}
-      <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-slate-950/90 border border-slate-800 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-40 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex items-start space-x-3.5 mb-3">
-          <div className="p-3 rounded-xl bg-cyan-950/80 border border-cyan-800/60 text-cyan-400">
-            <Landmark className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">
-              Representative Banking Systems Catalog
-            </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Standardized financial infrastructure security models with multi-layer architecture,
-              explicit evidence provenance (Observed vs Declared), key-protection hierarchies, and structured evidence gaps.
-            </p>
-          </div>
+      {/* Editorial Page Header */}
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-mono uppercase tracking-widest text-[#5755D9] font-semibold">
+            BANKING SYSTEMS
+          </span>
+          <span className="text-slate-300">/</span>
+          <span className="text-xs font-mono text-slate-500">
+            {profiles.length} Profiles Modeled
+          </span>
         </div>
+        <h1 className="text-3xl sm:text-4xl font-light text-[#17181C] tracking-tight">
+          Representative Banking Systems
+        </h1>
+        <p className="text-sm text-[#62656D] max-w-3xl leading-relaxed">
+          Standardized financial infrastructure security models with multi-layer architecture,
+          explicit evidence provenance (Observed vs Declared), key-protection hierarchies, and structured evidence gaps.
+        </p>
+      </div>
 
-        {/* Official Synthetic Environment Disclaimer */}
-        <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-800/50 text-amber-200/90 text-xs flex items-start space-x-2.5 mt-4">
-          <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <p className="leading-relaxed">
-            <strong className="text-amber-300 font-semibold">Synthetic Environment Disclaimer:</strong>{' '}
-            QuantumShield's banking profiles are representative synthetic environments used to demonstrate security
-            auditing and migration prioritization. They do not represent the actual architecture or configuration of
-            any specific bank.
-          </p>
-        </div>
+      {/* Official Synthetic Environment Disclaimer */}
+      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 text-slate-700 text-xs flex items-start space-x-3">
+        <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        <p className="leading-relaxed text-xs">
+          <strong className="text-slate-900 font-semibold">Synthetic Environment Disclaimer:</strong>{' '}
+          QuantumShield's banking profiles are representative synthetic environments used to demonstrate security
+          auditing and migration prioritization. They do not represent the actual architecture or configuration of
+          any specific bank.
+        </p>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-        <div className="flex items-center space-x-2 w-full sm:w-auto flex-1 max-w-md px-3 py-2 rounded-lg bg-slate-950/80 border border-slate-800">
-          <Search className="w-4 h-4 text-slate-500 shrink-0" />
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-200/90 shadow-xs text-xs">
+        <div className="flex items-center space-x-2.5 w-full sm:w-auto flex-1 max-w-md px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 focus-within:bg-white focus-within:border-[#5755D9] focus-within:ring-1 focus-within:ring-[#5755D9] transition">
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search banking profiles by name, ID, or tag..."
-            className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+            className="w-full bg-transparent text-xs text-[#17181C] placeholder-slate-400 focus:outline-none font-mono"
           />
         </div>
 
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-          <span className="text-slate-400 text-xs font-mono">Criticality:</span>
+          <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+          <span className="text-slate-600 text-xs font-mono">Criticality:</span>
           <select
             value={selectedCriticality}
             onChange={(e) => setSelectedCriticality(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none cursor-pointer"
+            className="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#5755D9] cursor-pointer font-sans"
           >
             <option value="ALL">All Criticalities</option>
             <option value="CRITICAL">Critical Only</option>
@@ -146,17 +150,17 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
       {/* Loading & Error States */}
       {isLoading && (
         <div className="p-12 text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mx-auto" />
-          <p className="text-xs text-slate-400 font-mono">Loading representative banking profiles catalog...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-[#5755D9] mx-auto" />
+          <p className="text-xs text-slate-500 font-mono">Loading representative banking profiles catalog...</p>
         </div>
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-200 text-xs flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start space-x-3">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
           <div>
-            <div className="font-bold text-rose-300">Failed to load profiles</div>
-            <div className="text-slate-300 mt-0.5">{error}</div>
+            <div className="font-bold text-rose-900">Failed to load profiles</div>
+            <div className="text-rose-700 mt-0.5">{error}</div>
           </div>
         </div>
       )}
@@ -165,7 +169,7 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
       {!isLoading && !error && (
         <div className="space-y-4">
           {filteredProfiles.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-xs font-mono">
+            <div className="p-8 text-center text-slate-500 text-xs font-mono bg-white rounded-xl border border-slate-200">
               No representative banking systems match the filter criteria.
             </div>
           ) : (
@@ -175,6 +179,7 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
                 profile={prof}
                 risk={risks[prof.id]}
                 onAuditWithScan={handleAudit}
+                onSimulate={onSimulateProfile}
                 isDetailedView={true}
               />
             ))
@@ -184,4 +189,3 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
     </div>
   );
 };
-

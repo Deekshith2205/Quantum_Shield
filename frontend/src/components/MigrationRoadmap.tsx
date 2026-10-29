@@ -11,32 +11,32 @@ export const MigrationRoadmap: React.FC<MigrationRoadmapProps> = ({ plan }) => {
     switch (prio) {
       case 'P0':
         return {
-          badge: 'bg-rose-950 text-rose-300 border-rose-800',
-          indicator: 'bg-rose-500',
-          border: 'border-rose-500/50',
-          text: 'text-rose-400',
+          badge: 'bg-red-50 text-red-700 border-red-200',
+          indicator: 'bg-red-500',
+          border: 'border-slate-200/90',
+          text: 'text-red-700',
         };
       case 'P1':
         return {
-          badge: 'bg-orange-950 text-orange-300 border-orange-800',
+          badge: 'bg-orange-50 text-orange-800 border-orange-200',
           indicator: 'bg-orange-500',
-          border: 'border-orange-500/50',
-          text: 'text-orange-400',
+          border: 'border-slate-200/90',
+          text: 'text-orange-800',
         };
       case 'P2':
         return {
-          badge: 'bg-amber-950 text-amber-300 border-amber-800',
+          badge: 'bg-amber-50 text-amber-800 border-amber-200',
           indicator: 'bg-amber-500',
-          border: 'border-amber-500/40',
-          text: 'text-amber-400',
+          border: 'border-slate-200/90',
+          text: 'text-amber-800',
         };
       case 'P3':
       default:
         return {
-          badge: 'bg-slate-800 text-slate-300 border-slate-700',
-          indicator: 'bg-slate-600',
-          border: 'border-slate-800',
-          text: 'text-slate-400',
+          badge: 'bg-slate-100 text-slate-700 border-slate-200',
+          indicator: 'bg-slate-400',
+          border: 'border-slate-200/90',
+          text: 'text-slate-600',
         };
     }
   };
@@ -45,40 +45,40 @@ export const MigrationRoadmap: React.FC<MigrationRoadmapProps> = ({ plan }) => {
     switch (evidence?.toUpperCase()) {
       case 'OBSERVED':
         return (
-          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <Eye className="w-3 h-3" />
             <span>OBSERVED</span>
           </span>
         );
       case 'CAPABILITY_PROBED':
         return (
-          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/60">
+          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-[#5755D9] border border-indigo-200">
             <span>CAPABILITY_PROBED</span>
           </span>
         );
       case 'CLASSICAL_ONLY_OBSERVED':
         return (
-          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-700/60">
-            <Eye className="w-3 h-3 text-blue-400" />
+          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            <Eye className="w-3 h-3 text-blue-600" />
             <span>CLASSICAL_ONLY</span>
           </span>
         );
       case 'PROBED_UNSUPPORTED':
         return (
-          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950/80 text-rose-300 border border-rose-800/60">
+          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-50 text-red-700 border border-red-200">
             <span>PROBED_UNSUPPORTED</span>
           </span>
         );
       case 'INFERRED':
         return (
-          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/80 text-amber-400 border border-amber-800/60">
+          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
             <span>INFERRED</span>
           </span>
         );
       case 'NOT_OBSERVABLE':
       default:
         return (
-          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-400 border border-slate-700">
+          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200">
             <EyeOff className="w-3 h-3" />
             <span>NOT_OBSERVABLE</span>
           </span>
@@ -90,11 +90,11 @@ export const MigrationRoadmap: React.FC<MigrationRoadmapProps> = ({ plan }) => {
     <div className="space-y-4">
       {/* Section Header */}
       <div>
-        <h2 className="text-lg font-bold text-white tracking-wide flex items-center space-x-2">
-          <Zap className="w-5 h-5 text-amber-400" />
+        <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center space-x-2">
+          <Zap className="w-5 h-5 text-[#5755D9]" />
           <span>Prioritized Post-Quantum Migration Roadmap</span>
         </h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           Ranked upgrade plan answering: <em>"What cryptographic component should your organization upgrade first?"</em>
         </p>
       </div>
@@ -106,7 +106,7 @@ export const MigrationRoadmap: React.FC<MigrationRoadmapProps> = ({ plan }) => {
           return (
             <div
               key={step.priority_rank}
-              className={`p-5 rounded-2xl border bg-slate-900/90 hover:border-slate-700 transition shadow-lg relative overflow-hidden ${prioTheme.border}`}
+              className="p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-300 transition shadow-xs relative overflow-hidden"
             >
               {/* Header row */}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
@@ -117,14 +117,14 @@ export const MigrationRoadmap: React.FC<MigrationRoadmapProps> = ({ plan }) => {
                     {step.priority}
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
                       Step #{step.priority_rank} &bull; {step.affected_component}
                     </span>
-                    <h3 className="text-base font-bold text-white">{step.title}</h3>
-                    <div className="text-xs font-mono text-cyan-300 flex items-center space-x-2">
-                      <span>Current: <strong className="text-white">{step.current_mechanism}</strong></span>
+                    <h3 className="text-base font-bold text-slate-900">{step.title}</h3>
+                    <div className="text-xs font-mono text-[#5755D9] flex items-center space-x-2">
+                      <span>Current: <strong className="text-slate-800">{step.current_mechanism}</strong></span>
                       <span>&rarr;</span>
-                      <span>Target: <strong className="text-cyan-400">{step.recommended_target}</strong></span>
+                      <span>Target: <strong className="text-[#5755D9]">{step.recommended_target}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -138,25 +138,25 @@ export const MigrationRoadmap: React.FC<MigrationRoadmapProps> = ({ plan }) => {
               </div>
 
               {/* Rationale & Migration Approach */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-3 pt-3 border-t border-slate-800/80">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-3 pt-3 border-t border-slate-100">
                 <div className="space-y-1">
-                  <span className="font-semibold text-slate-300 block">Why Upgrade This Component:</span>
-                  <p className="text-slate-400 leading-relaxed">{step.reason}</p>
+                  <span className="font-semibold text-slate-900 block">Why Upgrade This Component:</span>
+                  <p className="text-slate-600 leading-relaxed">{step.reason}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="font-semibold text-cyan-300 block">Migration Approach:</span>
-                  <p className="text-slate-300 leading-relaxed">{step.migration_approach}</p>
+                  <span className="font-semibold text-[#5755D9] block">Migration Approach:</span>
+                  <p className="text-slate-700 leading-relaxed">{step.migration_approach}</p>
                 </div>
               </div>
 
               {/* Standards Tags */}
               {step.target_standards && step.target_standards.length > 0 && (
                 <div className="mt-3 pt-2 flex flex-wrap items-center gap-1.5 text-xs font-mono">
-                  <span className="text-[11px] text-slate-500">Target PQC Standards:</span>
+                  <span className="text-[11px] text-slate-400">Target PQC Standards:</span>
                   {step.target_standards.map((std, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 rounded text-[10px] bg-slate-950 text-cyan-300 border border-slate-800 font-semibold"
+                      className="px-2 py-0.5 rounded text-[10px] bg-slate-50 text-[#5755D9] border border-slate-200 font-semibold"
                     >
                       {std}
                     </span>
