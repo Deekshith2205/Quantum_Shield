@@ -230,7 +230,14 @@ Dashboard available at: `http://127.0.0.1:5173`
 pytest
 ```
 
-Includes **176 passing unit, integration, and security tests** covering:
+Includes **196 passing unit, integration, and security tests** covering:
+- Banking Criticality + Key-Protection Risk Engine (`app.services.banking_risk_engine`)
+- Deterministic multi-dimensional migration prioritization formula ($BEF, TRF, M_{\text{norm}}$)
+- SNDL (Store Now, Decrypt Later) data lifetime weighting (VERY_LONG outranks SHORT)
+- Monotonicity and invariant enforcement (Criticality, Lifetime, Exposure, Migration Effort)
+- Key-protection-chain weakness analysis and AES-256 Grover-resilience rule
+- Priority bands (P0, P1, P2, P3) and planning windows
+- Banking risk API endpoints (`GET /api/banking/risk`, `GET /api/banking/profiles/{id}/risk`)
 - Representative Banking System Profiles, architecture layers, and synthetic catalog (`app.models.profiles`)
 - Multi-tier Key Protection Chains (`KeyProtectionChain`: Data Encryption -> Key Wrapping -> Key Storage -> Authentication)
 - Explicit Evidence Provenance tracking (`EvidenceSource`: EXTERNAL_SCAN, OPERATOR_DECLARED, CONFIGURATION_FILE, INFERRED)
@@ -257,11 +264,70 @@ Includes **176 passing unit, integration, and security tests** covering:
 - X.509 certificate parsing (RSA, ECDSA curves, Ed25519, expired certs, trust chains)
 - Cryptographic normalization (TLS 1.2 vs TLS 1.3, AES-128 vs AES-256)
 - Deterministic Quantum Risk Engine & Readiness Scoring (0–100)
-- FastAPI endpoints (`/api/scan`, `/api/audit`, `/api/health`) and contract verification
+- FastAPI endpoints (`/api/scan`, `/api/audit`, `/api/health`, `/api/banking/risk`) and contract verification
 
 ---
 
-## 9. Standards Alignment
+## 9. Banking Criticality & Key-Protection Risk Engine (Phase 4B)
+
+QuantumShield's **Prioritization Engine** answers the pivotal CISO question:
+> **Which banking systems should be migrated to post-quantum cryptography first, and why?**
+
+### Multi-Dimensional Prioritization Formula
+
+The prioritization engine uses a deterministic, explainable mathematical formula combining technical vulnerability, business exposure, data retention lifetime, and operational migration effort:
+
+$$\text{Business Exposure Factor (BEF)} = 0.30 \cdot C_{\text{norm}} + 0.25 \cdot S_{\text{norm}} + 0.30 \cdot L_{\text{norm}} + 0.15 \cdot E_{\text{norm}}$$
+
+$$\text{Technical Risk Factor (TRF)} = \frac{\max(Q_{\text{score}}, K_{\text{score}})}{4.0}$$
+
+$$\text{Priority Score} = \text{round}\Big( 100 \cdot \text{TRF} \cdot (0.70 \cdot \text{BEF} + 0.30 \cdot M_{\text{norm}}) \Big)$$
+
+Where:
+- $C_{\text{norm}}$: Business Criticality (CRITICAL = 1.0, HIGH = 0.75, MEDIUM = 0.50, LOW = 0.25)
+- $S_{\text{norm}}$: Data Sensitivity (HIGHLY_SENSITIVE = 1.0, CONFIDENTIAL = 0.75, INTERNAL = 0.50, PUBLIC = 0.25)
+- $L_{\text{norm}}$: SNDL Data Retention Lifetime (VERY_LONG [>10y] = 1.0, LONG [5-10y] = 0.75, MEDIUM [1-5y] = 0.50, SHORT [<1y] = 0.25)
+- $E_{\text{norm}}$: Network Exposure (INTERNET = 1.0, PARTNER = 0.75, INTERNAL = 0.50, RESTRICTED = 0.35)
+- $M_{\text{norm}}$: Migration Effort (VERY_HIGH = 1.0, HIGH = 0.75, MEDIUM = 0.50, LOW = 0.25)
+- $Q_{\text{score}}$: Quantum Risk Level (CRITICAL = 4, HIGH = 3, MEDIUM = 2, LOW = 1, NONE = 0)
+- $K_{\text{score}}$: Key Protection Chain Weakness Score (QUANTUM_EXPOSED = 4, PARTIALLY_QUANTUM_READY = 2, QUANTUM_READY = 0)
+
+### Priority Bands & Planning Windows
+
+| Priority Band | Score Range | Classification | Planning Window | Action Rationale |
+|:---:|:---:|:---|:---:|:---|
+| **P0** | **85 – 100** | **Critical Immediate Migration** | **0 – 6 months** | Severe SNDL exposure, critical financial record retention, and complex migration effort require immediate cryptographic agility planning. |
+| **P1** | **65 – 84** | **High Migration Priority** | **6 – 18 months** | Significant business impact, sensitive payload, or hardware appliance upgrade cycle dependencies. |
+| **P2** | **40 – 64** | **Medium Migration Priority** | **18 – 36 months** | Moderate business exposure or shorter data retention; standard multi-year migration roadmap. |
+| **P3** | **0 – 39** | **Low Priority / Monitor & Maintain** | **36+ months** | Modern hybrid post-quantum cryptography already deployed or low-sensitivity public assets. |
+
+### Key Protection Chain Analysis & The AES-256 Rule
+
+The engine inspects the complete 4-tier cryptographic key hierarchy:
+1. **Bulk Data Encryption**: AES-256 / AES-128
+2. **Key Wrapping (KEK)**: RSA-2048 / RSA-4096 / ML-KEM-768
+3. **Key Storage**: FIPS 140-2/3 Level 3/4 HSM / Cloud KMS
+4. **Master Authentication**: RSA / ECDSA / ML-DSA
+
+> **Fundamental Invariant — AES-256 Grover Resilience**:
+> AES-256 retains approximately 128-bit security against an idealized Grover search and is not treated as a quantum-broken primitive by QuantumShield. Vulnerabilities in data-at-rest protection stem from asymmetric key wrapping (e.g., RSA-2048/4096, ECDH) and authentication signatures that protect the AES keys, rather than AES-256 itself.
+
+> **Store Now, Decrypt Later (SNDL) Prioritization**:
+> Long-lived sensitive data has greater exposure to Store Now, Decrypt Later risk because confidentiality must remain intact for an extended period. Systems holding multi-decade financial records (e.g. Core Banking general ledger, KYC records) take migration precedence over ephemeral public sessions.
+
+### Synthetic Profile Migration Rankings
+
+| Rank | System Profile | Criticality | SNDL Lifetime | Key Chain Status | Priority | Score | Planning Window |
+|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **#1** | **Core Banking Account Engine** | CRITICAL | VERY_LONG (25-30y) | QUANTUM_EXPOSED (RSA-4096 wrapping) | **P0** | **92** | 0 – 6 months |
+| **#2** | **Customer KYC & Identity Vault** | CRITICAL | VERY_LONG (25-30y) | QUANTUM_EXPOSED (RSA-2048 wrapping) | **P0** | **85** | 0 – 6 months |
+| **#3** | **ATM & POS Processing Network** | HIGH | LONG (7-10y) | QUANTUM_EXPOSED (Triple-DES / RSA-2048) | **P1** | **82** | 6 – 18 months |
+| **#4** | **Retail Internet Banking Portal** | HIGH | MEDIUM (1-3y) | QUANTUM_EXPOSED (Perimeter RSA/ECDHE) | **P2** | **49** | 18 – 36 months |
+| **#5** | **Modern Payment Gateway** | CRITICAL | SHORT (<90d) | QUANTUM_READY (Hybrid ML-KEM-768) | **P3** | **20** | 36+ months |
+
+---
+
+## 10. Standards Alignment
 
 - **NIST FIPS 203**: Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM / Kyber)
 - **NIST FIPS 204**: Module-Lattice-Based Digital Signature Standard (ML-DSA / Dilithium)

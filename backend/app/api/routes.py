@@ -371,3 +371,34 @@ def get_banking_profile(profile_id: str):
             },
         )
     return profile
+
+
+@router.get("/banking/risk", tags=["Banking Risk Engine"])
+def get_banking_risk_rankings():
+    """
+    Returns migration priority ranking and multidimensional risk assessments
+    for all representative synthetic banking systems.
+    Answers: 'Which banking systems should be migrated first, and why?'
+    """
+    from app.services.banking_risk_engine import get_all_synthetic_risk_assessments
+    return get_all_synthetic_risk_assessments()
+
+
+@router.get("/banking/profiles/{profile_id}/risk", tags=["Banking Risk Engine"])
+def get_banking_profile_risk(profile_id: str):
+    """
+    Returns the multidimensional banking risk and key-protection-chain analysis
+    for a specific synthetic banking profile.
+    """
+    from app.services.banking_risk_engine import get_profile_risk_assessment
+    assessment = get_profile_risk_assessment(profile_id)
+    if not assessment:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "error": "PROFILE_NOT_FOUND",
+                "detail": f"Synthetic banking profile '{profile_id}' not found for risk evaluation.",
+            },
+        )
+    return assessment
+

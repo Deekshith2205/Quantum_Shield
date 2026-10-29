@@ -11,14 +11,15 @@ import { ObservabilityNotes } from './components/ObservabilityNotes';
 import { BankingAssetCard } from './components/BankingAssetCard';
 import { BankingSystemCard } from './components/BankingSystemCard';
 import { BankingSystemsCatalog } from './components/BankingSystemsCatalog';
+import { BankingRiskOverview } from './components/BankingRiskOverview';
 import { StandardsModal } from './components/StandardsModal';
 import { JsonExportModal } from './components/JsonExportModal';
 import type { ScanResponse } from './types/scan';
 import { scanDomain, checkBackendHealth } from './services/api';
-import { AlertCircle, Shield, Globe, Landmark } from 'lucide-react';
+import { AlertCircle, Shield, Globe, Landmark, TrendingUp } from 'lucide-react';
 
 export function App() {
-  const [activeView, setActiveView] = useState<'scanner' | 'catalog'>('scanner');
+  const [activeView, setActiveView] = useState<'scanner' | 'catalog' | 'risk'>('scanner');
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
   const [scanData, setScanData] = useState<ScanResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -75,7 +76,7 @@ export function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Mobile View Switcher */}
-        <div className="flex md:hidden items-center justify-center space-x-2 p-1 rounded-xl bg-slate-900/80 border border-slate-800 text-xs max-w-sm mx-auto">
+        <div className="flex md:hidden items-center justify-center space-x-1 p-1 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] max-w-md mx-auto">
           <button
             onClick={() => setActiveView('scanner')}
             className={`flex-1 py-1.5 rounded-lg font-semibold transition text-center cursor-pointer ${
@@ -84,7 +85,7 @@ export function App() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Domain Scanner
+            Scanner
           </button>
           <button
             onClick={() => setActiveView('catalog')}
@@ -94,15 +95,28 @@ export function App() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Banking Systems (5)
+            Banking (5)
+          </button>
+          <button
+            onClick={() => setActiveView('risk')}
+            className={`flex-1 py-1.5 rounded-lg font-semibold transition text-center cursor-pointer ${
+              activeView === 'risk'
+                ? 'bg-gradient-to-r from-cyan-600/90 to-indigo-600/90 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Priority (P0–P3)
           </button>
         </div>
 
         {/* View 1: Representative Banking Systems Catalog */}
         {activeView === 'catalog' ? (
           <BankingSystemsCatalog onAuditProfile={handleAuditFromCatalog} />
+        ) : activeView === 'risk' ? (
+          /* View 2: Banking Migration Prioritization Engine */
+          <BankingRiskOverview onAuditProfile={handleAuditFromCatalog} />
         ) : (
-          /* View 2: Live Domain Scanner */
+          /* View 3: Live Domain Scanner */
           <>
             {/* Domain Search / Assessment Hero */}
             <DomainInput
@@ -126,10 +140,11 @@ export function App() {
             {/* Scan Results View */}
             {scanData && !isLoading && (
               <div className="space-y-8 animate-in fade-in duration-300">
-                {/* 0. Banking System Profile & Key Chain Context (Phase 4A) */}
+                {/* 0. Banking System Profile & Key Chain Context (Phase 4A & 4B) */}
                 {scanData.banking_asset && (
                   <BankingSystemCard
                     profile={scanData.banking_asset}
+                    risk={scanData.banking_risk}
                     isDetailedView={true}
                   />
                 )}

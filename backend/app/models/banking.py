@@ -71,6 +71,13 @@ class DataLifetime(str, Enum):
     VERY_LONG = "VERY_LONG"
 
 
+class MigrationEffort(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    VERY_HIGH = "VERY_HIGH"
+
+
 class TrustZone(str, Enum):
     PUBLIC = "PUBLIC"
     DMZ = "DMZ"
@@ -191,25 +198,29 @@ class BankingAsset(BaseModel):
         description="Alias for asset_type representing banking system classification"
     )
     description: str = Field(default="", description="Asset functional description")
-    criticality: AssetCriticality = Field(
+    criticality: Optional[AssetCriticality] = Field(
         default=AssetCriticality.MEDIUM,
         description="Business criticality level (distinct from finding severity)"
     )
-    data_sensitivity: DataSensitivity = Field(
+    data_sensitivity: Optional[DataSensitivity] = Field(
         default=DataSensitivity.CONFIDENTIAL,
         description="Classification of data handled by this asset"
     )
-    exposure: AssetExposure = Field(
+    exposure: Optional[AssetExposure] = Field(
         default=AssetExposure.INTERNET,
         description="Network exposure level"
     )
-    data_lifetime: DataLifetime = Field(
+    data_lifetime: Optional[DataLifetime] = Field(
         default=DataLifetime.LONG,
         description="Required confidentiality lifetime (quantum SNDL threat horizon)"
     )
-    trust_zone: TrustZone = Field(
+    trust_zone: Optional[TrustZone] = Field(
         default=TrustZone.DMZ,
         description="Network trust architecture segment"
+    )
+    migration_effort: Optional[MigrationEffort] = Field(
+        default=MigrationEffort.MEDIUM,
+        description="Estimated operational and architecture complexity to migrate to post-quantum standards"
     )
     layers: Dict[SecurityLayer, List[EvidenceItem]] = Field(
         default_factory=dict,

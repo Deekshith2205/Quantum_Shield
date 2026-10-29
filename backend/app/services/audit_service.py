@@ -14,6 +14,7 @@ from app.services.crypto_audit_adapter import (
     map_findings_to_audit_layer,
     summarize_audit_findings,
 )
+from app.services.banking_risk_engine import evaluate_banking_risk
 
 
 class AuditService:
@@ -116,8 +117,16 @@ class AuditService:
         # 6. Audit Metrics Summary
         audit_summary = summarize_audit_findings(audit_findings)
 
+        # 7. Phase 4B Banking Criticality + Key-Protection Risk Assessment
+        banking_risk = evaluate_banking_risk(
+            asset,
+            scan_quantum_score=scan_response.score.readiness_score,
+            scan_classical_risk=classical_risk,
+        )
+
         # Enrich scan_response with audit context for backward compatibility
         scan_response.banking_asset = asset
+        scan_response.banking_risk = banking_risk
         scan_response.audit_findings = audit_findings
         scan_response.zero_trust = zero_trust
 
@@ -128,5 +137,6 @@ class AuditService:
             crypto=scan_response,
             zero_trust=zero_trust,
             risk=risk_dimensions,
+            banking_risk=banking_risk,
         )
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { BankingAsset, EvidenceItem, EvidenceGap } from '../types/scan';
+import type { BankingAsset, EvidenceItem, EvidenceGap, BankingRiskAssessment } from '../types/scan';
 import {
   Landmark,
   ShieldAlert,
@@ -17,21 +17,42 @@ import {
   Database,
   ExternalLink,
   Info,
+  TrendingUp,
+  Sliders,
 } from 'lucide-react';
 
 interface BankingSystemCardProps {
   profile: BankingAsset;
+  risk?: BankingRiskAssessment;
   onAuditWithScan?: (profileId: string) => void;
   isDetailedView?: boolean;
 }
 
 export const BankingSystemCard: React.FC<BankingSystemCardProps> = ({
   profile,
+  risk,
   onAuditWithScan,
   isDetailedView = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'crypto' | 'evidence' | 'gaps'>('crypto');
+  const [activeTab, setActiveTab] = useState<'crypto' | 'risk' | 'evidence' | 'gaps'>(
+    risk ? 'risk' : 'crypto'
+  );
   const [expanded, setExpanded] = useState<boolean>(isDetailedView);
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'P0':
+        return 'bg-rose-950/90 text-rose-300 border-rose-800';
+      case 'P1':
+        return 'bg-amber-950/90 text-amber-300 border-amber-800';
+      case 'P2':
+        return 'bg-sky-950/90 text-sky-300 border-sky-800';
+      case 'P3':
+        return 'bg-emerald-950/90 text-emerald-300 border-emerald-800';
+      default:
+        return 'bg-slate-800 text-slate-300 border-slate-700';
+    }
+  };
 
   const getCriticalityBadge = (criticality: string) => {
     switch (criticality) {
@@ -110,6 +131,16 @@ export const BankingSystemCard: React.FC<BankingSystemCardProps> = ({
 
           {/* Badges & Action */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {risk && (
+              <span
+                className={`text-xs font-mono font-bold px-3 py-1 rounded-lg border uppercase tracking-wider ${getPriorityBadge(
+                  risk.migration_priority
+                )}`}
+              >
+                {risk.priority_band_label} · {risk.priority_score}/100
+              </span>
+            )}
+
             <span
               className={`text-xs font-mono font-bold px-3 py-1 rounded-lg border uppercase tracking-wider ${getCriticalityBadge(
                 profile.criticality
@@ -117,6 +148,12 @@ export const BankingSystemCard: React.FC<BankingSystemCardProps> = ({
             >
               {profile.criticality} CRITICALITY
             </span>
+
+            {profile.migration_effort && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                MIGRATION: {profile.migration_effort.replace(/_/g, ' ')}
+              </span>
+            )}
 
             {onAuditWithScan && (
               <button
@@ -181,6 +218,20 @@ export const BankingSystemCard: React.FC<BankingSystemCardProps> = ({
         <div className="p-5 space-y-5 bg-slate-950/40">
           {/* Sub-navigation tabs */}
           <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
+            {risk && (
+              <button
+                onClick={() => setActiveTab('risk')}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  activeTab === 'risk'
+                    ? 'bg-rose-950/80 text-rose-300 border border-rose-800/70 shadow-sm'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5 text-rose-400" />
+                <span>Migration Risk ({risk.migration_priority})</span>
+              </button>
+            )}
+
             <button
               onClick={() => setActiveTab('crypto')}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
@@ -218,9 +269,109 @@ export const BankingSystemCard: React.FC<BankingSystemCardProps> = ({
             </button>
           </div>
 
+          {/* TAB 0: Migration Risk (Phase 4B Priority Engine) */}
+          {activeTab === 'risk' && risk && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Priority & Planning Banner */}
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`text-xs font-mono font-bold px-3 py-1 rounded-lg border uppercase tracking-wider ${getPriorityBadge(
+                          risk.migration_priority
+                        )}`}
+                      >
+                        {risk.priority_band_label}
+                      </span>
+                      <span className="text-xs font-mono text-cyan-300">
+                        Planning Window: <strong className="text-white">{risk.recommended_planning_window}</strong>
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                      {risk.explanation}
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0 bg-slate-950/80 p-3 rounded-xl border border-slate-800 self-start sm:self-auto">
+                    <div className="text-[10px] font-mono uppercase text-slate-400">Priority Score</div>
+                    <div className="text-3xl font-black text-cyan-400 font-mono leading-none mt-0.5">
+                      {risk.priority_score}
+                      <span className="text-xs text-slate-500 font-normal">/100</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Weak links highlight if any */}
+                {risk.key_protection?.weak_links && risk.key_protection.weak_links.length > 0 && (
+                  <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-800/60 flex items-start space-x-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-1">
+                      <span className="font-bold text-rose-300">Identified Key-Chain Weak Links:</span>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {risk.key_protection.weak_links.map((link, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800"
+                          >
+                            {link}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 6-Dimension Contributor Breakdown */}
+              {risk.contributors && risk.contributors.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span className="font-semibold text-slate-200">Risk & Business Factor Contributors</span>
+                    <span className="font-mono text-[10px]">Deterministic Multi-Dimensional Weighting</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {risk.contributors.map((contrib, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400 text-[11px] font-medium">{contrib.factor}</span>
+                          <span className="font-mono text-xs font-bold text-cyan-300">{contrib.label}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                          <div
+                            className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.max(12, contrib.weight_pct)}%` }}
+                          />
+                        </div>
+                        {contrib.description && (
+                          <p className="text-[10px] text-slate-500 truncate" title={contrib.description}>
+                            {contrib.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 1: Key Chain & Cryptography */}
           {activeTab === 'crypto' && (
             <div className="space-y-4 animate-in fade-in duration-200">
+              {/* AES-256 Grover Resilience Principle Callout */}
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs flex items-start space-x-3">
+                <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                <div className="text-[11px] text-slate-300 leading-relaxed">
+                  <strong className="text-cyan-300 font-semibold">AES-256 Grover Resilience:</strong> AES-256 retains
+                  approximately 128-bit security against an idealized Grover search and is not treated as a quantum-broken
+                  primitive by QuantumShield. Vulnerabilities in data-at-rest protection stem from asymmetric key wrapping (RSA-2048/4096, ECDH)
+                  and root authentication signatures protecting keys, rather than AES-256 bulk payload encryption itself.
+                </div>
+              </div>
               {/* Key Protection Chain visual sequence */}
               {keyChain && (
                 <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">

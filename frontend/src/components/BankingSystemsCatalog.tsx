@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { BankingAsset } from '../types/scan';
+import type { BankingAsset, BankingRiskAssessment } from '../types/scan';
 import { BankingSystemCard } from './BankingSystemCard';
-import { getBankingProfiles } from '../services/api';
+import { getBankingProfiles, getBankingRiskRankings } from '../services/api';
 import {
   Landmark,
   ShieldAlert,
@@ -28,6 +28,7 @@ const PROFILE_DEFAULT_DOMAINS: Record<string, string> = {
 
 export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ onAuditProfile }) => {
   const [profiles, setProfiles] = useState<BankingAsset[]>([]);
+  const [risks, setRisks] = useState<Record<string, BankingRiskAssessment>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -36,10 +37,15 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
-    getBankingProfiles()
-      .then((data) => {
+    Promise.all([getBankingProfiles(), getBankingRiskRankings()])
+      .then(([profilesData, risksData]) => {
         if (isMounted) {
-          setProfiles(data);
+          setProfiles(profilesData);
+          const riskMap: Record<string, BankingRiskAssessment> = {};
+          risksData.forEach((r) => {
+            riskMap[r.asset_id] = r;
+          });
+          setRisks(riskMap);
           setError(null);
         }
       })
@@ -167,6 +173,7 @@ export const BankingSystemsCatalog: React.FC<BankingSystemsCatalogProps> = ({ on
               <BankingSystemCard
                 key={prof.id}
                 profile={prof}
+                risk={risks[prof.id]}
                 onAuditWithScan={handleAudit}
                 isDetailedView={true}
               />

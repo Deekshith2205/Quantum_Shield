@@ -219,6 +219,7 @@ export type AssetCriticality = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type DataSensitivity = 'PUBLIC' | 'INTERNAL' | 'CONFIDENTIAL' | 'HIGHLY_SENSITIVE';
 export type AssetExposure = 'INTERNET' | 'PARTNER' | 'INTERNAL' | 'RESTRICTED';
 export type DataLifetime = 'SHORT' | 'MEDIUM' | 'LONG' | 'VERY_LONG';
+export type MigrationEffort = 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
 export type TrustZone = 'PUBLIC' | 'DMZ' | 'APPLICATION' | 'DATA' | 'ADMIN' | 'THIRD_PARTY';
 
 export type SecurityLayer =
@@ -303,6 +304,7 @@ export type BankingAsset = {
   exposure: AssetExposure;
   data_lifetime: DataLifetime;
   trust_zone: TrustZone;
+  migration_effort?: MigrationEffort;
   tags: string[];
   layers?: Partial<Record<SecurityLayer, EvidenceItem[]>>;
   cryptography?: CryptoConfiguration;
@@ -386,6 +388,76 @@ export type ZeroTrustAssessment = {
   findings: AuditFinding[];
 };
 
+export type KeyChainStatus =
+  | 'QUANTUM_READY'
+  | 'PARTIALLY_QUANTUM_READY'
+  | 'QUANTUM_EXPOSED'
+  | 'INSUFFICIENT_EVIDENCE';
+
+export type MigrationPriority = 'P0' | 'P1' | 'P2' | 'P3';
+
+export type KeyChainAnalysis = {
+  status: KeyChainStatus;
+  weak_links: string[];
+  data_encryption_status: string;
+  data_encryption_algorithm?: string;
+  key_wrapping_status: string;
+  key_wrapping_algorithm?: string;
+  key_storage_status: string;
+  key_storage_facility?: string;
+  authentication_status: string;
+  authentication_algorithm?: string;
+  primary_migration_dependencies: string[];
+  notes: string;
+};
+
+export type TechnicalRiskContext = {
+  quantum_risk_level: number;
+  quantum_risk_label: string;
+  classical_risk_level: number;
+  classical_risk_label: string;
+  governing_technical_risk: number;
+};
+
+export type BusinessRiskContext = {
+  criticality_score: number;
+  criticality_label: string;
+  sensitivity_score: number;
+  sensitivity_label: string;
+  lifetime_score: number;
+  lifetime_label: string;
+  exposure_score: number;
+  exposure_label: string;
+  migration_effort_score: number;
+  migration_effort_label: string;
+  business_exposure_factor: number;
+};
+
+export type RiskContributorItem = {
+  factor: string;
+  score: number;
+  max_score: number;
+  label: string;
+  weight_pct: number;
+  description?: string;
+};
+
+export type BankingRiskAssessment = {
+  asset_id: string;
+  asset_name: string;
+  system_type: string;
+  technical_risk: TechnicalRiskContext;
+  business_context: BusinessRiskContext;
+  key_protection: KeyChainAnalysis;
+  migration_priority: MigrationPriority;
+  priority_score: number;
+  priority_band_label: string;
+  contributors: RiskContributorItem[];
+  explanation: string;
+  recommended_planning_window: string;
+  created_at?: string;
+};
+
 export type ScanResponse = {
   target: TargetInfo;
   scan_status: string;
@@ -400,6 +472,7 @@ export type ScanResponse = {
   observability_scope: ObservabilityScope;
   not_observable_notes: string[];
   banking_asset?: BankingAsset;
+  banking_risk?: BankingRiskAssessment;
   audit_findings?: AuditFinding[];
   zero_trust?: ZeroTrustAssessment;
 };

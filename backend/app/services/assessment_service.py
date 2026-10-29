@@ -18,6 +18,7 @@ from app.models.banking import infer_default_banking_asset, BankingAsset
 from app.models.profiles import get_synthetic_profile_by_id
 from app.models.zero_trust import build_default_zero_trust_assessment
 from app.services.crypto_audit_adapter import map_findings_to_audit_layer
+from app.services.banking_risk_engine import evaluate_banking_risk
 
 
 class AssessmentService:
@@ -81,6 +82,11 @@ class AssessmentService:
             banking_asset.id,
             tls_version=tls_raw.get("negotiated_protocol", "TLSv1.3")
         )
+        banking_risk = evaluate_banking_risk(
+            banking_asset,
+            scan_quantum_score=quantum_score.score,
+            scan_classical_risk="LOW"
+        )
 
         return ScanResponse(
             target=TargetInfo(**target_raw),
@@ -96,6 +102,7 @@ class AssessmentService:
             observability_scope=observability_scope,
             not_observable_notes=not_observable_notes,
             banking_asset=banking_asset,
+            banking_risk=banking_risk,
             audit_findings=audit_findings,
             zero_trust=zero_trust,
         )

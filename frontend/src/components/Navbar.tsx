@@ -1,13 +1,13 @@
 import React from 'react';
-import { Shield, Cpu, Download, BookOpen, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Shield, Cpu, Download, BookOpen, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
 
 interface NavbarProps {
   onOpenStandardsModal: () => void;
   onOpenExportModal: () => void;
   hasScanData: boolean;
   backendOnline: boolean;
-  activeView: 'scanner' | 'catalog';
-  onSelectView: (view: 'scanner' | 'catalog') => void;
+  activeView: 'scanner' | 'catalog' | 'risk';
+  onSelectView: (view: 'scanner' | 'catalog' | 'risk') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -66,6 +66,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Banking Systems</span>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800">
                 5
+              </span>
+            </button>
+            <button
+              onClick={() => onSelectView('risk')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer flex items-center space-x-1.5 ${
+                activeView === 'risk'
+                  ? 'bg-gradient-to-r from-cyan-600/90 to-indigo-600/90 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Prioritization Engine</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-rose-950/80 text-rose-300 border border-rose-800/80 font-bold">
+                P0–P3
               </span>
             </button>
           </nav>

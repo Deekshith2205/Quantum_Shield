@@ -1,4 +1,4 @@
-import type { ScanResponse, ApiError, BankingSystemProfile } from '../types/scan';
+import type { ScanResponse, ApiError, BankingSystemProfile, BankingRiskAssessment } from '../types/scan';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -86,6 +86,48 @@ export async function getBankingProfileById(id: string): Promise<BankingSystemPr
 
   if (!response.ok) {
     throw new Error(`Failed to fetch profile ${id}: HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getBankingRiskRankings(): Promise<BankingRiskAssessment[]> {
+  const url = `${API_BASE}/api/banking/risk`;
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (err: any) {
+    try {
+      response = await fetch('http://127.0.0.1:8000/api/banking/risk');
+    } catch {
+      throw new Error(`Unable to fetch banking risk rankings from http://127.0.0.1:8000/api/banking/risk.`);
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch banking risk rankings: HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getBankingProfileRisk(id: string): Promise<BankingRiskAssessment> {
+  const url = `${API_BASE}/api/banking/profiles/${encodeURIComponent(id)}/risk`;
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (err: any) {
+    try {
+      response = await fetch(`http://127.0.0.1:8000/api/banking/profiles/${encodeURIComponent(id)}/risk`);
+    } catch {
+      throw new Error(`Unable to fetch risk assessment for profile ${id}.`);
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch risk for profile ${id}: HTTP ${response.status}`);
   }
 
   return response.json();

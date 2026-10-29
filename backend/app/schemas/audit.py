@@ -15,7 +15,7 @@ from app.models.banking import (
 )
 from app.models.audit import AuditFinding, AuditSummary
 from app.models.zero_trust import ZeroTrustAssessment
-from app.models.risk import RiskDimensions
+from app.models.risk import RiskDimensions, BankingRiskAssessment
 from app.schemas.scan import ScanResponse
 
 
@@ -42,4 +42,5 @@ class AuditResponse(BaseModel):
     crypto: ScanResponse = Field(..., description="Underlying passive TLS post-quantum assessment")
     zero_trust: ZeroTrustAssessment = Field(..., description="NIST SP 800-207 Zero Trust pillar assessment")
     risk: RiskDimensions = Field(..., description="Multidimensional risk and criticality breakdown")
+    banking_risk: Optional[BankingRiskAssessment] = Field(default=None, description="Banking criticality and key protection risk assessment")
 

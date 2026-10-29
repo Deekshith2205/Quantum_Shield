@@ -16,6 +16,7 @@ from app.models.banking import (
     AssetExposure,
     DataLifetime,
     TrustZone,
+    MigrationEffort,
     SecurityLayer,
     EvidenceSource,
     EvidenceItem,
@@ -49,6 +50,7 @@ SYNTHETIC_BANKING_PROFILES: List[BankingAsset] = [
         exposure=AssetExposure.INTERNET,
         data_lifetime=DataLifetime.LONG,
         trust_zone=TrustZone.DMZ,
+        migration_effort=MigrationEffort.MEDIUM,
         tags=["payment", "pci-dss", "pqc-hybrid", "hsm", "critical"],
         cryptography=CryptoConfiguration(
             tls_versions=["TLSv1.3"],
@@ -207,9 +209,10 @@ SYNTHETIC_BANKING_PROFILES: List[BankingAsset] = [
         description="Mainframe-backed general ledger, deposit engine, and account master record database.",
         criticality=AssetCriticality.CRITICAL,
         data_sensitivity=DataSensitivity.HIGHLY_SENSITIVE,
-        exposure=AssetExposure.INTERNAL,
+        exposure=AssetExposure.RESTRICTED,
         data_lifetime=DataLifetime.VERY_LONG,
         trust_zone=TrustZone.DATA,
+        migration_effort=MigrationEffort.VERY_HIGH,
         tags=["core-banking", "mainframe", "ledger", "legacy-crypto", "critical"],
         cryptography=CryptoConfiguration(
             tls_versions=["TLSv1.2"],
@@ -329,6 +332,7 @@ SYNTHETIC_BANKING_PROFILES: List[BankingAsset] = [
         exposure=AssetExposure.RESTRICTED,
         data_lifetime=DataLifetime.VERY_LONG,
         trust_zone=TrustZone.DATA,
+        migration_effort=MigrationEffort.HIGH,
         tags=["database", "pii", "kyc", "gdpr", "kms", "critical"],
         cryptography=CryptoConfiguration(
             tls_versions=["TLSv1.3"],
@@ -435,6 +439,7 @@ SYNTHETIC_BANKING_PROFILES: List[BankingAsset] = [
         exposure=AssetExposure.INTERNET,
         data_lifetime=DataLifetime.MEDIUM,
         trust_zone=TrustZone.DMZ,
+        migration_effort=MigrationEffort.MEDIUM,
         tags=["web-banking", "retail", "waf", "dmz", "high-criticality"],
         cryptography=CryptoConfiguration(
             tls_versions=["TLSv1.3"],
@@ -540,6 +545,7 @@ SYNTHETIC_BANKING_PROFILES: List[BankingAsset] = [
         exposure=AssetExposure.RESTRICTED,
         data_lifetime=DataLifetime.LONG,
         trust_zone=TrustZone.APPLICATION,
+        migration_effort=MigrationEffort.VERY_HIGH,
         tags=["atm", "iso8583", "pin-block", "des-migration", "hardware-crypto"],
         cryptography=CryptoConfiguration(
             tls_versions=["TLSv1.2"],

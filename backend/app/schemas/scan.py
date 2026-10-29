@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from app.models.banking import BankingAsset
 from app.models.audit import AuditFinding
 from app.models.zero_trust import ZeroTrustAssessment
+from app.models.risk import BankingRiskAssessment
 
 
 class ScanRequest(BaseModel):
@@ -231,6 +232,7 @@ class ScanResponse(BaseModel):
     observability_scope: ObservabilityScope
     not_observable_notes: List[str]
     banking_asset: Optional[BankingAsset] = None
+    banking_risk: Optional[BankingRiskAssessment] = None
     audit_findings: List[AuditFinding] = Field(default_factory=list)
     zero_trust: Optional[ZeroTrustAssessment] = None
 
