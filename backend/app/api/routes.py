@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from app.schemas.scan import ScanRequest, ScanResponse, ErrorResponse
 from app.schemas.audit import AuditRequest, AuditResponse
+from app.models.simulation import WhatIfMigrationRequest, WhatIfMigrationResult
 from app.services.assessment_service import AssessmentService
 from app.services.audit_service import AuditService
 from app.scanners.domain_validator import DomainValidationError
@@ -401,4 +402,40 @@ def get_banking_profile_risk(profile_id: str):
             },
         )
     return assessment
+
+
+@router.post(
+    "/banking/risk/what-if",
+    response_model=WhatIfMigrationResult,
+    tags=["What-If Simulator"],
+)
+def simulate_post_quantum_migration(request: WhatIfMigrationRequest):
+    """
+    Executes a deterministic What-If Post-Quantum Migration Simulation.
+    Evaluates hypothetical cryptographic substitutions without modifying persistent state.
+    Returns structured before/after comparisons, score deltas, and resolved/remaining risks.
+    """
+    from app.services.migration_simulator import (
+        simulate_migration,
+        MigrationSimulationError,
+        ProfileNotFoundError,
+    )
+    try:
+        return simulate_migration(request)
+    except ProfileNotFoundError as e:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": "PROFILE_NOT_FOUND", "detail": str(e)},
+        )
+    except MigrationSimulationError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": "INVALID_MIGRATION_REQUEST", "detail": str(e)},
+        )
+    except Exception as e:
+        logger.exception("Unexpected error during migration simulation")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "SIMULATION_INTERNAL_ERROR", "detail": str(e)},
+        )
 
