@@ -1,0 +1,23 @@
+{
+  "_notice": "SYNTHETIC BENCHMARK CONFIGURATION - INTERBANK MESSAGE SECURITY",
+  "system_id": "SAMPLE-BANK-INTERBANK-05",
+  "messaging": {
+    "protocol": "ISO20022_OVER_AS4",
+    "signature": {
+      "algorithm": "RSA-4096",
+      "digest": "SHA-384",
+      "padding": "PSS"
+    },
+    "encryption": {
+      "algorithm": "AES-256-GCM",
+      "key_wrap": "RSA-4096",
+      "hsm_backed": true
+    },
+    "transport": {
+      "tls_min": "TLS 1.2",
+      "tls_max": "TLS 1.3",
+      "cipher": "TLS_AES_256_GCM_SHA384",
+      "key_exchange": "ECDHE"
+    }
+  }
+}

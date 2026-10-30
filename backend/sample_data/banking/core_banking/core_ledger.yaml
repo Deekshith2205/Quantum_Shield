@@ -1,0 +1,41 @@
+# SYNTHETIC BENCHMARK CONFIGURATION - CORE BANKING LEDGER
+system:
+  system_id: "SAMPLE-BANK-CORE-04"
+  name: "Synthetic Core Banking Ledger & Account Master"
+  system_type: "CORE_BANKING"
+  criticality: "CRITICAL"
+  trust_zone: "DATA"
+  exposure: "RESTRICTED"
+  data_sensitivity: "HIGHLY_SENSITIVE"
+  data_lifetime: "VERY_LONG"
+
+database_encryption:
+  tablespace_encryption: "AES-256-CBC"
+  column_encryption: "AES-256-GCM"
+  symmetric_algorithm: "AES-256"
+  mode: "GCM"
+  key_size: 256
+  key_wrapping_algorithm: "RSA-2048"
+  key_wrapping_padding: "OAEP"
+  master_key_storage: "HSM"
+  hsm_vendor: "Thales Luna HSM 7"
+  pkcs11_module: "/usr/safenet/lunaclient/lib/libCryptoki2_64.so"
+  algorithm_agility: "HARDCODED"
+  key_rotation_policy: "ANNUAL"
+
+transport_internal:
+  protocol: "TLS 1.2"
+  cipher_suite: "ECDHE-RSA-AES256-GCM-SHA384"
+  key_exchange: "ECDHE"
+  elliptic_curve: "secp256r1"
+  client_certificate_auth: true
+  verify_certificate: true
+  trust_all_certs: false
+  ca_bundle_path: "/etc/pki/internal-ca/root_ca.synthetic.crt"
+
+certificates:
+  server_cert: "/etc/pki/tls/certs/core_banking.synthetic.crt"
+  private_key: "/etc/pki/tls/private/core_banking.synthetic.key"
+  key_algorithm: "RSA"
+  key_size: 2048
+  signature_algorithm: "SHA256withRSA"

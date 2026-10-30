@@ -1,0 +1,35 @@
+# SYNTHETIC BENCHMARK CONFIGURATION - ADMIN VPN CONCENTRATOR
+[system]
+system_id = "SAMPLE-BANK-VPN-07"
+name = "Synthetic Core Administrative Bastion & VPN Gateway"
+system_type = "ADMIN_PORTAL"
+criticality = "HIGH"
+trust_zone = "ADMIN"
+exposure = "RESTRICTED"
+data_sensitivity = "HIGHLY_SENSITIVE"
+data_lifetime = "SHORT"
+
+[vpn.transport]
+protocol = "TLS 1.3"
+min_tls_version = "TLS 1.3"
+cipher_suites = ["TLS_AES_256_GCM_SHA384"]
+key_exchange = "ECDHE"
+ec_curves = ["secp384r1", "X25519"]
+require_client_cert = true
+verify_peer = true
+check_hostname = true
+crl_path = "/etc/openvpn/crl/admin_ca.crl"
+
+[vpn.crypto]
+data_ciphers = ["AES-256-GCM", "CHACHA20-POLY1305"]
+auth_digest = "SHA-384"
+crypto_agility = "CONFIGURABLE"
+key_storage = "PKCS11_SMARTCARD"
+key_rotation_days = 90
+
+[vpn.certificates]
+server_cert = "/etc/openvpn/server.synthetic.crt"
+server_key = "/etc/openvpn/server.synthetic.key"
+certificate_algorithm = "ECDSA"
+curve = "secp384r1"
+signature_algorithm = "SHA384withECDSA"

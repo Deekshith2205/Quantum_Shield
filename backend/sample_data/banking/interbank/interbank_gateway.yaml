@@ -1,0 +1,44 @@
+# SYNTHETIC BENCHMARK CONFIGURATION - INTER-BANK FINANCIAL MESSAGING GATEWAY
+system:
+  system_id: "SAMPLE-BANK-INTERBANK-05"
+  name: "Synthetic Bilateral Inter-Bank & SWIFT Alliance Link"
+  system_type: "INTER_BANK_GATEWAY"
+  criticality: "CRITICAL"
+  trust_zone: "APPLICATION"
+  exposure: "PARTNER"
+  data_sensitivity: "HIGHLY_SENSITIVE"
+  data_lifetime: "LONG"
+
+message_signing:
+  signature_algorithm: "SHA384withRSA"
+  hash_algorithm: "SHA-384"
+  asymmetric_key_algorithm: "RSA"
+  key_size: 4096
+  key_storage: "HSM"
+  hsm_appliance: "Utimaco SecurityServer Se-Series"
+  key_wrapping_algorithm: "RSA-4096"
+
+payload_encryption:
+  bulk_algorithm: "AES-256-GCM"
+  mode: "GCM"
+  symmetric_key_size: 256
+  ephemeral_key_exchange: "ECDHE"
+  elliptic_curve: "secp384r1"
+
+network_transport:
+  tls_versions:
+    - "TLS 1.3"
+    - "TLS 1.2"
+  cipher_suites:
+    - "TLS_AES_256_GCM_SHA384"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+  key_exchange: "ECDHE"
+  mutual_tls_required: true
+  verify_peer_certificate: true
+  ocsp_stapling_enabled: true
+  crl_checking: true
+  ca_trust_bundle: "/etc/interbank/pki/trusted_bilateral_ca.synthetic.crt"
+
+crypto_agility:
+  configurability: "CONFIGURABLE"
+  pqc_migration_profile: "HYBRID_PLANNED"
