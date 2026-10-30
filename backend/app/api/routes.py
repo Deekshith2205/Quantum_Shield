@@ -3,6 +3,7 @@ Hardened with SSRF defense, rate limiting, bounded concurrency, and safe error d
 """
 
 import asyncio
+from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request, status
@@ -439,3 +440,110 @@ def simulate_post_quantum_migration(request: WhatIfMigrationRequest):
             content={"error": "SIMULATION_INTERNAL_ERROR", "detail": str(e)},
         )
 
+
+
+@router.get("/banking/upgrade-plan", tags=["Ranked Upgrade Plan"])
+def get_banking_upgrade_plan():
+    """
+    Returns the deterministic prioritized migration roadmap across all representative banking systems.
+    Dynamically computes priority scores, migration impact, and ordered queue.
+    """
+    from app.services.upgrade_planner import generate_ranked_upgrade_plan
+    return generate_ranked_upgrade_plan()
+
+
+@router.get("/banking/systems/{system_id}/cbom", tags=["CBOM Integration"])
+@router.post("/banking/systems/{system_id}/cbom", tags=["CBOM Integration"])
+def get_system_cbom(system_id: str):
+    """
+    Generates CycloneDX 1.7 Cryptographic Bill of Materials (CBOM) for a banking system.
+    Inventories algorithms, protocols, certificates, keys, and dependencies without exposing secrets.
+    """
+    from app.services.report_service import generate_system_cbom
+    from app.models.profiles import get_synthetic_profile_by_id
+    if not get_synthetic_profile_by_id(system_id):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": "PROFILE_NOT_FOUND", "detail": f"Banking system '{system_id}' not found."},
+        )
+    return generate_system_cbom(system_id)
+
+
+@router.get("/banking/systems/{system_id}/report/json", tags=["Reports & Auditability"])
+def get_system_json_report(system_id: str):
+    """
+    Returns a comprehensive, machine-readable post-quantum assessment report
+    sealed with a cryptographic audit hash chain record.
+    """
+    from app.services.report_service import build_complete_json_report
+    from app.models.profiles import get_synthetic_profile_by_id
+    if not get_synthetic_profile_by_id(system_id):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": "PROFILE_NOT_FOUND", "detail": f"Banking system '{system_id}' not found."},
+        )
+    report = build_complete_json_report(system_id)
+    return report.model_dump()
+
+
+@router.get("/banking/systems/{system_id}/report/pdf", tags=["Reports & Auditability"])
+def get_system_pdf_report(system_id: str):
+    """
+    Generates and returns an executive-grade, professional PDF audit report.
+    """
+    from app.services.report_service import generate_pdf_report
+    from app.models.profiles import get_synthetic_profile_by_id
+    from fastapi import Response
+    if not get_synthetic_profile_by_id(system_id):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": "PROFILE_NOT_FOUND", "detail": f"Banking system '{system_id}' not found."},
+        )
+    pdf_bytes = generate_pdf_report(system_id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=quantumshield-report-{system_id}.pdf"
+        },
+    )
+
+
+@router.post("/audit/verify", tags=["Reports & Auditability"])
+def verify_audit_record_endpoint(payload: Dict[str, Any]):
+    """
+    Verifies the cryptographic integrity of an individual audit record and optional payload.
+    Detects any payload tampering or hash corruption.
+    """
+    from app.models.audit_chain import AuditRecord
+    from app.services.audit_chain_service import DEFAULT_AUDIT_CHAIN_SERVICE
+    try:
+        record_data = payload.get("record", payload)
+        record = AuditRecord(**record_data)
+        assessment_data = payload.get("assessment_data")
+        result = DEFAULT_AUDIT_CHAIN_SERVICE.verify_audit_record(record, assessment_data)
+        return result
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": "INVALID_AUDIT_RECORD", "detail": str(e)},
+        )
+
+
+@router.post("/audit/verify-chain", tags=["Reports & Auditability"])
+def verify_audit_chain_endpoint(records_data: List[Dict[str, Any]]):
+    """
+    Verifies an entire sequence of chained audit records.
+    Detects broken chains, altered sequence history, or corrupted records.
+    """
+    from app.models.audit_chain import AuditRecord
+    from app.services.audit_chain_service import DEFAULT_AUDIT_CHAIN_SERVICE
+    try:
+        records = [AuditRecord(**r) for r in records_data]
+        result = DEFAULT_AUDIT_CHAIN_SERVICE.verify_audit_chain(records)
+        return result
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": "INVALID_CHAIN_RECORDS", "detail": str(e)},
+        )
