@@ -1,0 +1,17 @@
+{
+  "_notice": "SYNTHETIC BENCHMARK CONFIGURATION - ADMIN BASTION HOST",
+  "bastion": {
+    "system_id": "SAMPLE-BANK-VPN-07",
+    "ssh_crypto": {
+      "kex_algorithms": ["curve25519-sha256", "ecdh-sha2-nistp384"],
+      "ciphers": ["aes256-gcm@openssh.com", "chacha20-poly1305@openssh.com"],
+      "host_key_algorithms": ["ecdsa-sha2-nistp384", "rsa-sha2-512"],
+      "macs": ["hmac-sha2-512-etm@openssh.com"]
+    },
+    "zero_trust": {
+      "mfa_required": true,
+      "fido2_hardware_token": true,
+      "session_max_lifetime_hours": 8
+    }
+  }
+}

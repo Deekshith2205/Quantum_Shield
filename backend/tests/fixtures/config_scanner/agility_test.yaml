@@ -1,0 +1,14 @@
+system:
+  system_id: "TEST-AGILITY-01"
+
+crypto_tests:
+  # Variable interpolation -> CONFIGURABLE
+  dynamic_kex: "${KEY_EXCHANGE_ALGO}"
+  # List of algorithms -> CONFIGURABLE
+  supported_ciphers:
+    - "AES-256-GCM"
+    - "CHACHA20-POLY1305"
+  # Single fixed literal -> HARDCODED
+  fixed_bulk_cipher: "AES-256-CBC"
+  # Explicit agility flag
+  algorithm_mode: "CONFIGURABLE"

@@ -1,0 +1,18 @@
+# SYNTHETIC BENCHMARK CONFIGURATION - ATM TERMINAL FLEET SECURITY
+terminal_profile:
+  fleet_id: "SYNTHETIC-ATM-NORTH"
+  pin_block_format: "ANSI X9.8"
+  pin_encryption: "3DES"
+  legacy_symmetric_cipher: "3DES"
+  session_key_distribution: "RSA-1024"
+  hardware_security:
+    device: "HSM"
+    model: "Atalla Network Security Processor"
+    key_storage: "HSM"
+  network:
+    protocol: "TLS 1.0"
+    fallback_ciphers:
+      - "3DES"
+      - "DES"
+    certificate_validation: "disabled"
+    crypto_agility: "HARDCODED"

@@ -1,0 +1,55 @@
+# SYNTHETIC BENCHMARK CONFIGURATION - FOR QUANTUMSHIELD AUDIT ONLY
+# System: Synthetic Retail Net Banking Portal
+# Environment: DMZ / Internet Facing
+
+system:
+  system_id: "SAMPLE-BANK-NETBANK-01"
+  name: "Synthetic Retail Net Banking Portal"
+  system_type: "NET_BANKING_PORTAL"
+  criticality: "HIGH"
+  trust_zone: "DMZ"
+  exposure: "INTERNET"
+  data_sensitivity: "CONFIDENTIAL"
+  data_lifetime: "MEDIUM"
+
+transport:
+  tls_versions:
+    - "TLSv1.2"
+    - "TLSv1.3"
+  cipher_suites:
+    - "TLS_AES_256_GCM_SHA384"
+    - "TLS_CHACHA20_POLY1305_SHA256"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+    - "ECDHE-RSA-AES128-GCM-SHA256"
+  key_exchange_algorithms:
+    - "ECDHE"
+    - "X25519"
+  elliptic_curves:
+    - "X25519"
+    - "secp256r1"
+  client_authentication: false
+  session_resumption: true
+
+certificates:
+  primary:
+    certificate_path: "/etc/ssl/certs/netbank_synthetic.crt"
+    private_key_path: "/etc/ssl/private/netbank_synthetic.key"
+    key_algorithm: "RSA"
+    key_size: 2048
+    signature_algorithm: "SHA256withRSA"
+  validation:
+    verify_peer: true
+    verify_hostname: true
+    trust_store: "/etc/ssl/certs/ca-bundle.synthetic.crt"
+
+application:
+  session_encryption:
+    algorithm: "AES-256-GCM"
+    key_rotation_days: 90
+    key_storage: "KMS"
+    kms_provider: "Synthetic-Vault-KMS"
+  csrf_protection:
+    hash_algorithm: "SHA-256"
+  credentials:
+    # Synthetic placeholder secret for redaction testing
+    db_password: "SYNTHETIC_TEST_SECRET_DO_NOT_USE_12345"

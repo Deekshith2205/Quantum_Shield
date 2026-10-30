@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bankingConfiguration systemId="SAMPLE-BANK-XML-01">
+  <transport>
+    <protocol>TLS 1.3</protocol>
+    <cipherSuite>TLS_AES_256_GCM_SHA384</cipherSuite>
+    <keyExchange>ECDHE</keyExchange>
+  </transport>
+  <encryption>
+    <algorithm>AES-256-GCM</algorithm>
+    <keyWrapping>RSA-2048</keyWrapping>
+  </encryption>
+</bankingConfiguration>
