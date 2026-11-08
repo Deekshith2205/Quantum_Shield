@@ -42,11 +42,11 @@ SYSTEM_CONFIG_MAP = {
 
 # Mapping of system IDs to crypto misuse code fixture paths.
 SYSTEM_CODE_MAP = {
-    "BANK-PROF-CORE-BANKING": PROJECT_ROOT / "backend/tests/fixtures/crypto_misuse/python/auth_service.py",
-    "BANK-PROF-NET-BANKING": PROJECT_ROOT / "backend/tests/fixtures/crypto_misuse/javascript/auth.js",
-    "BANK-PROF-PAYMENT-GATEWAY": PROJECT_ROOT / "backend/tests/fixtures/crypto_misuse/java/PaymentGateway.java",
-    "BANK-PROF-ATM-NETWORK": PROJECT_ROOT / "backend/tests/fixtures/crypto_misuse/python/payment_service.py",
-    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/tests/fixtures/crypto_misuse/java/AuthService.java",
+    "BANK-PROF-CORE-BANKING": PROJECT_ROOT / "backend/sample_data/banking/core_banking/src",
+    "BANK-PROF-NET-BANKING": PROJECT_ROOT / "backend/sample_data/banking/net_banking/src",
+    "BANK-PROF-PAYMENT-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/payment_gateway/src",
+    "BANK-PROF-ATM-NETWORK": PROJECT_ROOT / "backend/sample_data/banking/atm/src",
+    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/interbank/src",
 }
 
 

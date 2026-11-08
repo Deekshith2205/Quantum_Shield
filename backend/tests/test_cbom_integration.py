@@ -7,6 +7,7 @@ import pytest
 
 from app.services.report_service import generate_system_cbom
 from app.services.upgrade_planner import (
+    SYSTEM_CODE_MAP,
     get_system_config_findings,
     get_system_crypto_misuse_findings,
 )
@@ -143,3 +144,32 @@ def test_sample_data_paths_are_independent_of_working_directory(monkeypatch):
     # Configuration and code findings must also remain consistent.
     assert backend_config_count == root_config_count
     assert backend_crypto_count == root_crypto_count
+
+def test_banking_profiles_scan_sample_source_not_test_fixtures():
+    """Each mapped banking profile must scan its own sample source directory."""
+    expected_counts = {
+        "BANK-PROF-PAYMENT-GATEWAY": 6,
+        "BANK-PROF-CORE-BANKING": 6,
+        "BANK-PROF-KYC-DB": 11,
+        "BANK-PROF-NET-BANKING": 7,
+        "BANK-PROF-ATM-NETWORK": 6,
+    }
+
+    assert set(expected_counts).issubset(SYSTEM_CODE_MAP)
+
+    for system_id, expected_count in expected_counts.items():
+        source_dir = Path(SYSTEM_CODE_MAP[system_id]).resolve()
+
+        assert source_dir.is_dir(), (
+            f"Missing source directory for {system_id}: {source_dir}"
+        )
+        assert source_dir.name == "src"
+        assert "sample_data" in source_dir.parts
+        assert "tests" not in source_dir.parts
+
+        findings = get_system_crypto_misuse_findings(system_id)
+
+        assert len(findings) == expected_count, (
+            f"{system_id}: expected {expected_count} findings, "
+            f"got {len(findings)}"
+        )
