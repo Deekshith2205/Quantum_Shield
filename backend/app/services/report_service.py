@@ -25,24 +25,34 @@ from app.scanners.config_scanner.scanner import BankingConfigScanner
 from app.cbom import CBOMBuilder, CBOMSerializer, CBOMValidator
 
 
+
 def generate_system_cbom(system_id: str) -> Dict[str, Any]:
     """Generates CycloneDX 1.7 CBOM for a given banking system using teammate's CBOMBuilder."""
     sample_dir = SYSTEM_CONFIG_MAP.get(system_id)
+
     if sample_dir and Path(sample_dir).is_dir():
         scanner = BankingConfigScanner()
         inv = scanner.scan_directory(Path(sample_dir))
         builder = CBOMBuilder(deterministic=True)
         doc = builder.build_cbom(inv)
         return doc.model_dump(by_alias=True, exclude_none=True)
-    # Default fallback
-    core_dir = Path("backend/sample_data/banking/core_banking")
+
+    # Default fallback: use the repository-root-resolved core banking path.
+    core_dir = SYSTEM_CONFIG_MAP["BANK-PROF-CORE-BANKING"]
+
     if core_dir.is_dir():
         scanner = BankingConfigScanner()
         inv = scanner.scan_directory(core_dir)
         builder = CBOMBuilder(deterministic=True)
         doc = builder.build_cbom(inv)
         return doc.model_dump(by_alias=True, exclude_none=True)
-    return {"bomFormat": "CycloneDX", "specVersion": "1.7", "components": [], "dependencies": []}
+
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.7",
+        "components": [],
+        "dependencies": [],
+    }
 
 
 def build_complete_json_report(system_id: str) -> CompleteAssessmentReport:
