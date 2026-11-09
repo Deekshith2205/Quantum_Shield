@@ -17,6 +17,63 @@ class ScanRequest(BaseModel):
     probe_pqc: bool = Field(default=False, description="Whether to perform an active TLS 1.3 hybrid PQC capability probe if default is classical")
     asset_id: Optional[str] = Field(default=None, description="Optional banking asset / profile ID to associate with the scan")
 
+class ConfigFileInput(BaseModel):
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Configuration filename including extension",
+    )
+    content: str = Field(
+        ...,
+        max_length=1_048_576,
+        description="Configuration file content as UTF-8 text",
+    )
+
+
+class ConfigScanRequest(BaseModel):
+    files: List[ConfigFileInput] = Field(
+        ...,
+        min_length=1,
+        max_length=20,
+        description="One to twenty configuration files",
+    )
+
+class CodeFileInput(BaseModel):
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Source-code filename including extension",
+    )
+    content: str = Field(
+        ...,
+        max_length=1_048_576,
+        description="Source-code content as UTF-8 text",
+    )
+
+
+class CodeScanRequest(BaseModel):
+    files: List[CodeFileInput] = Field(
+        ...,
+        min_length=1,
+        max_length=20,
+        description="One to twenty source-code files",
+    )
+
+class CertificateScanRequest(BaseModel):
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Certificate filename including extension",
+    )
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=1_048_576,
+        description="PEM-encoded X.509 certificate as UTF-8 text",
+    )
 
 class TargetInfo(BaseModel):
     domain: str

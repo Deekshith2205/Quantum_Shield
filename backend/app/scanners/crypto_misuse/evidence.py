@@ -120,9 +120,27 @@ def extract_code_context(text: str, target_line: int, window: int = 1) -> Dict[s
 
 def is_binary_content(data: bytes) -> bool:
     """
-    Detect if byte sequence represents binary data rather than text.
-    Checks for null bytes in the initial sample buffer.
+    Detect binary data while allowing normal UTF-8 text.
+
+    Checks the initial sample for null bytes, excessive control
+    characters, and invalid UTF-8 sequences.
     """
     sample = data[:4096]
-    return b"\x00" in sample
 
+    if b"\x00" in sample:
+        return True
+
+    try:
+        decoded = sample.decode("utf-8")
+    except UnicodeDecodeError:
+        return True
+
+    if not decoded:
+        return False
+
+    allowed_controls = {"\t", "\n", "\r", "\f", "\b"}
+    return any(
+        (ord(char) < 32 and char not in allowed_controls)
+        or ord(char) == 127
+        for char in decoded
+    )
