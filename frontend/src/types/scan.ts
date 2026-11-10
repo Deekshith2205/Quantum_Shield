@@ -458,6 +458,55 @@ export type BankingRiskAssessment = {
   created_at?: string;
 };
 
+export type UpgradeScoreBreakdown = {
+  governing_technical_risk: number;
+  technical_risk_factor: number;
+  criticality_score: number;
+  sensitivity_score: number;
+  lifetime_score: number;
+  exposure_score: number;
+  migration_effort_score: number;
+  business_exposure_factor: number;
+  migration_effort_factor: number;
+  composite_urgency_factor: number;
+};
+
+export type RankedUpgradeItem = {
+  rank: number;
+  system_id: string;
+  system_name: string;
+  system: string;
+  priority: MigrationPriority;
+  priority_score: number;
+  quantum_score: number;
+  classical_score: number;
+  score_breakdown: UpgradeScoreBreakdown;
+  criticality: string;
+  sensitivity: string;
+  data_lifetime: string;
+  lifetime: string;
+  exposure: string;
+  migration_impact: string;
+  top_findings: string[];
+  key_protection_chain: Record<string, string>;
+  crypto_agility: string;
+  evidence_gaps: string[];
+  recommended_migration: string;
+  recommended_upgrade: string;
+  migration_complexity: string;
+  estimated_migration_complexity: string;
+};
+
+export type RankedUpgradePlan = {
+  timestamp: string;
+  total_systems: number;
+  p0_count: number;
+  p1_count: number;
+  p2_count: number;
+  p3_count: number;
+  queue: RankedUpgradeItem[];
+};
+
 export type ScanResponse = {
   target: TargetInfo;
   scan_status: string;

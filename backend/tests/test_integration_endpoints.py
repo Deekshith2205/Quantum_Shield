@@ -20,6 +20,47 @@ def test_api_banking_upgrade_plan_endpoint():
     assert len(data["queue"]) == data["total_systems"]
     assert data["queue"][0]["rank"] == 1
     assert data["queue"][0]["system_id"] == "BANK-PROF-CORE-BANKING"
+    # Priority-band counts must account for every ranked system.
+    assert (
+        data["p0_count"]
+        + data["p1_count"]
+        + data["p2_count"]
+        + data["p3_count"]
+    ) == data["total_systems"]
+
+    # Every queue item must expose the factors behind its priority score.
+    for item in data["queue"]:
+        breakdown = item["score_breakdown"]
+
+        assert 0 <= breakdown["governing_technical_risk"] <= 4
+        assert 0.0 <= breakdown["technical_risk_factor"] <= 1.0
+        assert 1 <= breakdown["criticality_score"] <= 4
+        assert 1 <= breakdown["sensitivity_score"] <= 4
+        assert 1 <= breakdown["lifetime_score"] <= 4
+        assert 1 <= breakdown["exposure_score"] <= 4
+        assert 1 <= breakdown["migration_effort_score"] <= 4
+
+        expected_technical_factor = (
+            breakdown["governing_technical_risk"] / 4.0
+        )
+        assert breakdown["technical_risk_factor"] == pytest.approx(
+            expected_technical_factor
+        )
+
+        expected_effort_factor = (
+            breakdown["migration_effort_score"] / 4.0
+        )
+        assert breakdown["migration_effort_factor"] == pytest.approx(
+            expected_effort_factor
+        )
+
+        expected_urgency = (
+            0.70 * breakdown["business_exposure_factor"]
+            + 0.30 * expected_effort_factor
+        )
+        assert breakdown["composite_urgency_factor"] == pytest.approx(
+            expected_urgency, abs=0.0001
+        )
 
 
 def test_api_banking_cbom_endpoint_get_and_post():

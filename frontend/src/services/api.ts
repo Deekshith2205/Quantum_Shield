@@ -3,6 +3,7 @@ import type {
   ApiError,
   BankingSystemProfile,
   BankingRiskAssessment,
+  RankedUpgradePlan,
   WhatIfMigrationRequest,
   WhatIfMigrationResult,
 } from '../types/scan';
@@ -114,6 +115,29 @@ export async function getBankingRiskRankings(): Promise<BankingRiskAssessment[]>
 
   if (!response.ok) {
     throw new Error(`Failed to fetch banking risk rankings: HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getBankingUpgradePlan(): Promise<RankedUpgradePlan> {
+  const url = `${API_BASE}/api/banking/upgrade-plan`;
+
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch {
+    try {
+      response = await fetch(
+        'http://127.0.0.1:8000/api/banking/upgrade-plan'
+      );
+    } catch {
+      throw new Error('Unable to fetch the banking upgrade plan from backend.');
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch banking upgrade plan: HTTP ${response.status}`);
   }
 
   return response.json();

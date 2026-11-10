@@ -10,7 +10,11 @@ from typing import List, Dict, Any, Optional
 
 from app.models.banking import BankingAsset
 from app.models.profiles import get_synthetic_banking_profiles
-from app.models.upgrade_plan import RankedUpgradePlan, RankedUpgradeItem
+from app.models.upgrade_plan import (
+    RankedUpgradePlan,
+    RankedUpgradeItem,
+    UpgradeScoreBreakdown,
+)
 from app.services.banking_risk_engine import evaluate_banking_risk
 from app.services.migration_impact_engine import evaluate_migration_impact
 from app.services.finding_normalizer import (
@@ -208,6 +212,32 @@ def generate_ranked_upgrade_plan(
                 system=p.name,
                 priority=prio_band,
                 priority_score=r.priority_score,
+                score_breakdown=UpgradeScoreBreakdown(
+                    governing_technical_risk=r.technical_risk.governing_technical_risk,
+                    technical_risk_factor=round(
+                        r.technical_risk.governing_technical_risk / 4.0, 4
+                    ),
+                    criticality_score=r.business_context.criticality_score,
+                    sensitivity_score=r.business_context.sensitivity_score,
+                    lifetime_score=r.business_context.lifetime_score,
+                    exposure_score=r.business_context.exposure_score,
+                    migration_effort_score=r.business_context.migration_effort_score,
+                    business_exposure_factor=r.business_context.business_exposure_factor,
+                    migration_effort_factor=round(
+                        r.business_context.migration_effort_score / 4.0, 4
+                    ),
+                    composite_urgency_factor=round(
+                        (
+                            0.70 * r.business_context.business_exposure_factor
+                        )
+                        + (
+                            0.30
+                            * r.business_context.migration_effort_score
+                            / 4.0
+                        ),
+                        4,
+                    ),
+                ),
                 quantum_score=item["q_score"],
                 classical_score=item["c_score"],
                 criticality=p.criticality.value,

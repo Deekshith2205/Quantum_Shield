@@ -9,9 +9,12 @@ import { JsonExportModal } from './components/JsonExportModal';
 import type { ScanResponse } from './types/scan';
 import { scanDomain, checkBackendHealth } from './services/api';
 import { Shield } from 'lucide-react';
+import { BankingUpgradePlan } from './components/BankingUpgradePlan';
 
 export function App() {
-  const [activeView, setActiveView] = useState<'scanner' | 'catalog' | 'risk' | 'simulator'>('scanner');
+  const [activeView, setActiveView] = useState<
+    'scanner' | 'catalog' | 'risk' | 'simulator' | 'upgrade-plan'
+  >('scanner');
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
   const [simulatorAssetId, setSimulatorAssetId] = useState<string>('BANK-PROF-CORE-BANKING');
   const [scanData, setScanData] = useState<ScanResponse | null>(null);
@@ -69,7 +72,6 @@ export function App() {
       }
     }, 50);
   };
-
   return (
     <div className="min-h-screen bg-[#FCFCFA] text-slate-900 flex flex-col selection:bg-[#5755D9]/20 selection:text-[#5755D9]">
       {/* 1. Recreated Reference Header */}
@@ -105,8 +107,13 @@ export function App() {
               onSimulateProfile={handleOpenSimulator}
             />
           </div>
+        ) : activeView === 'upgrade-plan' ? (
+          /* View 4: Ranked Banking Upgrade Plan */
+          <div className="max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-[85px] py-8 animate-in fade-in duration-200">
+            <BankingUpgradePlan />
+          </div>
         ) : (
-          /* View 4: Recreated Reference Home / Landing Page */
+          /* View 5: Recreated Reference Home / Landing Page */
           <HomePage
             onScan={handleScan}
             isLoading={isLoading}
