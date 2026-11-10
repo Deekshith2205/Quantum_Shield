@@ -43,6 +43,13 @@ def parse_der_certificate(der_bytes: bytes) -> Dict[str, Any]:
     cert = x509.load_der_x509_certificate(der_bytes)
     return parse_x509_certificate_object(cert, der_bytes)
 
+def parse_pem_certificate(pem_bytes: bytes) -> Dict[str, Any]:
+    """
+    Parses a PEM-encoded X.509 certificate into cryptographic metadata.
+    """
+    cert = x509.load_pem_x509_certificate(pem_bytes)
+    der_bytes = cert.public_bytes(serialization.Encoding.DER)
+    return parse_x509_certificate_object(cert, der_bytes)
 
 def parse_x509_certificate_object(cert: x509.Certificate, raw_der: Optional[bytes] = None) -> Dict[str, Any]:
     """

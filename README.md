@@ -197,29 +197,47 @@ Internal controls such as pod-to-pod mTLS, database column-level encryption, KMS
 
 ---
 
+
 ## 7. Running the Platform Locally
 
-### Backend Setup:
-```bash
-# Navigate to backend and install dependencies
-cd backend
-pip install -r requirements.txt
+### Backend Setup
 
-# Start backend server
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+Run all backend commands from the Quantum_Shield repository root.
+
+```bash
+# Install backend dependencies
+python -m pip install -r backend/requirements.txt
+
+# Start the FastAPI backend server
+python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
 ```
-API docs available at: `http://127.0.0.1:8000/docs`
 
-### Frontend Setup:
+API documentation available at:
+
+http://127.0.0.1:8000/docs
+
+Backend health check:
+
+http://127.0.0.1:8000/api/health
+
+### Frontend Setup
+
+Open a separate terminal at the Quantum_Shield repository root.
+
 ```bash
-# Navigate to frontend and install dependencies
+# Navigate to the frontend
 cd frontend
+
+# Install frontend dependencies
 npm install
 
-# Start Vite development server
+# Start the Vite development server
 npm run dev
 ```
-Dashboard available at: `http://127.0.0.1:5173`
+
+Dashboard available at:
+
+http://127.0.0.1:5173
 
 ---
 

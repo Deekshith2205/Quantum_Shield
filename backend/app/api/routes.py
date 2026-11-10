@@ -1,7 +1,8 @@
 """FastAPI API routes for QuantumShield.
 Hardened with SSRF defense, rate limiting, bounded concurrency, and safe error disclosure.
 """
-
+import tempfile
+from pathlib import Path
 import asyncio
 from typing import Dict, List, Any, Optional
 import logging
@@ -9,7 +10,14 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 
-from app.schemas.scan import ScanRequest, ScanResponse, ErrorResponse
+from app.schemas.scan import (
+    ScanRequest,
+    ScanResponse,
+    ErrorResponse,
+    ConfigScanRequest,
+    CodeScanRequest,
+    CertificateScanRequest,
+)
 from app.schemas.audit import AuditRequest, AuditResponse
 from app.models.simulation import WhatIfMigrationRequest, WhatIfMigrationResult
 from app.services.assessment_service import AssessmentService
@@ -546,4 +554,429 @@ def verify_audit_chain_endpoint(records_data: List[Dict[str, Any]]):
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"error": "INVALID_CHAIN_RECORDS", "detail": str(e)},
+        )
+
+
+@router.post("/scan/config", tags=["Configuration Scanning"])
+def scan_uploaded_config(payload: ConfigScanRequest):
+    """
+    Safely scans uploaded configuration files without executing them.
+    Files are stored temporarily and removed after scanning.
+    """
+    from app.scanners.config_scanner import BankingConfigScanner
+    from app.services.finding_normalizer import normalize_config_finding
+    from app.scanners.crypto_misuse.evidence import is_binary_content
+
+    MAX_FILE_BYTES = 1_048_576
+    MAX_TOTAL_BYTES = 5 * 1_048_576
+
+    try:
+        total_bytes = 0
+        seen_names = set()
+        validated_files = []
+
+        with tempfile.TemporaryDirectory(prefix="quantumshield-config-") as temp_dir:
+            root = Path(temp_dir).resolve()
+            scanner = BankingConfigScanner(root_dir=root)
+
+            supported_extensions = scanner.parser.SUPPORTED_EXTENSIONS
+
+            for uploaded_file in payload.files:
+                name = uploaded_file.name
+
+                # Reject path traversal and unsafe filenames.
+                if (
+                    name in ("", ".", "..")
+                    or "/" in name
+                    or "\\" in name
+                    or "\x00" in name
+                    or Path(name).name != name
+                ):
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "error": "INVALID_FILENAME",
+                            "detail": "A filename is invalid.",
+                        },
+                    )
+
+                # Reject duplicate filenames, ignoring case.
+                normalized_name = name.casefold()
+                if normalized_name in seen_names:
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "error": "DUPLICATE_FILENAME",
+                            "detail": "Duplicate filenames are not allowed.",
+                        },
+                    )
+                seen_names.add(normalized_name)
+
+                # Accept only formats supported by the existing parser.
+                extension = Path(name).suffix.lower()
+                if (
+                    not name.lower().startswith(".env")
+                    and extension not in supported_extensions
+                ):
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "error": "UNSUPPORTED_FILE_TYPE",
+                            "detail": "One or more files have unsupported extensions.",
+                        },
+                    )
+
+                # Encode content before checking whether it is binary.
+                try:
+                    content_bytes = uploaded_file.content.encode("utf-8")
+                except UnicodeEncodeError:
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "error": "INVALID_FILE_ENCODING",
+                            "detail": "Files must contain valid UTF-8 text.",
+                        },
+                    )
+
+                # Reject binary-like content before writing it to disk.
+                if is_binary_content(content_bytes):
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "error": "INVALID_FILE_CONTENT",
+                            "detail": "Binary or null-byte content is not accepted.",
+                        },
+                    )
+
+                file_size = len(content_bytes)
+
+                if file_size > MAX_FILE_BYTES:
+                    return JSONResponse(
+                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                        content={
+                            "error": "FILE_TOO_LARGE",
+                            "detail": "Each configuration file must be at most 1 MiB.",
+                        },
+                    )
+
+                total_bytes += file_size
+                if total_bytes > MAX_TOTAL_BYTES:
+                    return JSONResponse(
+                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                        content={
+                            "error": "UPLOAD_TOO_LARGE",
+                            "detail": "The combined upload must be at most 5 MiB.",
+                        },
+                    )
+
+                file_path = root / name
+                file_path.write_bytes(content_bytes)
+                validated_files.append(file_path)
+
+            findings = []
+
+            for file_path in validated_files:
+                # Validate parsing separately so malformed configurations
+                # are not silently reported as successful empty scans.
+                parsed = scanner.parser.parse_file(
+                    file_path,
+                    relative_to=root,
+                )
+
+                if parsed.errors:
+                    return JSONResponse(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        content={
+                            "error": "INVALID_CONFIGURATION",
+                            "detail": (
+                                f"Configuration file '{file_path.name}' "
+                                "could not be parsed."
+                            ),
+                        },
+                    )
+
+                observations = scanner.scan_file(
+                    file_path,
+                    relative_to=root,
+                )
+
+                for observation in observations:
+                    normalized = normalize_config_finding(observation)
+                    findings.append(normalized.model_dump(mode="json"))
+
+            return {
+                "scan_status": "SUCCESS",
+                "files_scanned": len(validated_files),
+                "finding_count": len(findings),
+                "findings": findings,
+            }
+
+    except Exception:
+        logging.exception("Uploaded configuration scan failed.")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": "CONFIG_SCAN_FAILED",
+                "detail": "The configuration scan could not be completed.",
+            },
+        )
+
+
+
+@router.post("/scan/code", tags=["Code Scanning"])
+def scan_uploaded_code(payload: CodeScanRequest):
+    """
+    Safely scans uploaded source files for cryptographic misuse.
+    Source code is analyzed in memory and is never executed.
+    """
+    from app.scanners.crypto_misuse.scanner import (
+        CryptoMisuseScanner,
+        EXTENSION_TO_LANGUAGE,
+    )
+    from app.scanners.crypto_misuse.evidence import is_binary_content
+    from app.services.finding_normalizer import (
+        normalize_crypto_misuse_finding,
+    )
+
+    MAX_FILE_BYTES = 1_048_576
+    MAX_TOTAL_BYTES = 5 * 1_048_576
+
+    try:
+        total_bytes = 0
+        seen_names = set()
+        validated_files = []
+
+        # Validate every upload before scanning any file.
+        for uploaded_file in payload.files:
+            name = uploaded_file.name
+
+            if (
+                name in ("", ".", "..")
+                or "/" in name
+                or "\\" in name
+                or "\x00" in name
+                or Path(name).name != name
+            ):
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "error": "INVALID_FILENAME",
+                        "detail": "A filename is invalid.",
+                    },
+                )
+
+            normalized_name = name.casefold()
+            if normalized_name in seen_names:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "error": "DUPLICATE_FILENAME",
+                        "detail": "Duplicate filenames are not allowed.",
+                    },
+                )
+            seen_names.add(normalized_name)
+
+            extension = Path(name).suffix.lower()
+            language = EXTENSION_TO_LANGUAGE.get(extension)
+
+            if not language:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "error": "UNSUPPORTED_FILE_TYPE",
+                        "detail": "One or more files have unsupported source extensions.",
+                    },
+                )
+
+            # Encode content before checking whether it is binary.
+            try:
+                content_bytes = uploaded_file.content.encode("utf-8")
+            except UnicodeEncodeError:
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "error": "INVALID_FILE_ENCODING",
+                        "detail": "Files must contain valid UTF-8 text.",
+                    },
+                )
+
+            # Reject binary-like content before scanning.
+            if is_binary_content(content_bytes):
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "error": "INVALID_FILE_CONTENT",
+                        "detail": "Binary or null-byte content is not accepted.",
+                    },
+                )
+
+            file_size = len(content_bytes)
+
+            if file_size > MAX_FILE_BYTES:
+                return JSONResponse(
+                    status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                    content={
+                        "error": "FILE_TOO_LARGE",
+                        "detail": "Each source file must be at most 1 MiB.",
+                    },
+                )
+
+            total_bytes += file_size
+            if total_bytes > MAX_TOTAL_BYTES:
+                return JSONResponse(
+                    status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                    content={
+                        "error": "UPLOAD_TOO_LARGE",
+                        "detail": "The combined upload must be at most 5 MiB.",
+                    },
+                )
+
+            validated_files.append((name, language, uploaded_file.content))
+
+        scanner = CryptoMisuseScanner(
+            max_file_size_bytes=MAX_FILE_BYTES
+        )
+
+        findings = []
+
+        for name, language, content in validated_files:
+            result = scanner.scan_source(
+                code=content,
+                language=language,
+                filename=name,
+            )
+
+            for finding in result.findings:
+                normalized = normalize_crypto_misuse_finding(finding)
+                findings.append(normalized.model_dump(mode="json"))
+
+        return {
+            "scan_status": "SUCCESS",
+            "files_scanned": len(validated_files),
+            "finding_count": len(findings),
+            "findings": findings,
+        }
+
+    except Exception:
+        logging.exception("Uploaded source-code scan failed.")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": "CODE_SCAN_FAILED",
+                "detail": "The source-code scan could not be completed.",
+            },
+        )
+
+
+
+@router.post("/scan/cert", tags=["Certificate Scanning"])
+def scan_uploaded_certificate(payload: CertificateScanRequest):
+    """
+    Safely parses an uploaded PEM certificate without contacting external systems.
+    """
+    from app.scanners.certificate_parser import parse_pem_certificate
+    from app.scanners.crypto_misuse.evidence import is_binary_content
+
+    MAX_FILE_BYTES = 1_048_576
+
+    try:
+        name = payload.name
+
+        if (
+            name in ("", ".", "..")
+            or "/" in name
+            or "\\" in name
+            or "\x00" in name
+            or Path(name).name != name
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "INVALID_FILENAME",
+                    "detail": "The certificate filename is invalid.",
+                },
+            )
+
+        if Path(name).suffix.lower() not in (".pem", ".crt", ".cer"):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "UNSUPPORTED_FILE_TYPE",
+                    "detail": "Upload a PEM certificate with a .pem, .crt, or .cer extension.",
+                },
+            )
+
+        # Encode the uploaded certificate before binary-content validation.
+        try:
+            certificate_bytes = payload.content.encode("utf-8")
+        except UnicodeEncodeError:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "INVALID_FILE_ENCODING",
+                    "detail": "The certificate must contain valid UTF-8 text.",
+                },
+            )
+
+        # Reject binary-like content.
+        if is_binary_content(certificate_bytes):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "INVALID_FILE_CONTENT",
+                    "detail": "Binary or null-byte content is not accepted.",
+                },
+            )
+
+        # Enforce the maximum certificate size.
+        if len(certificate_bytes) > MAX_FILE_BYTES:
+            return JSONResponse(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                content={
+                    "error": "FILE_TOO_LARGE",
+                    "detail": "The certificate file must be at most 1 MiB.",
+                },
+            )
+
+        # Check PEM certificate delimiters.
+        if (
+            "-----BEGIN CERTIFICATE-----" not in payload.content
+            or "-----END CERTIFICATE-----" not in payload.content
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "INVALID_CERTIFICATE",
+                    "detail": "The uploaded content is not a valid PEM certificate.",
+                },
+            )
+
+        # Parse the certificate without contacting external systems.
+        try:
+            certificate = parse_pem_certificate(certificate_bytes)
+        except Exception:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "error": "INVALID_CERTIFICATE",
+                    "detail": "The uploaded PEM certificate could not be parsed.",
+                },
+            )
+
+        return {
+            "scan_status": "SUCCESS",
+            "source": "UPLOADED_CERTIFICATE",
+            "source_file": name,
+            "evidence_status": "OBSERVED",
+            "certificate": certificate,
+        }
+
+    except Exception:
+        logging.exception("Uploaded certificate scan failed.")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": "CERTIFICATE_SCAN_FAILED",
+                "detail": "The certificate scan could not be completed.",
+            },
         )

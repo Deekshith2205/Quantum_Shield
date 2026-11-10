@@ -112,6 +112,7 @@ def normalize_crypto_misuse_finding(finding: Any, system_id: Optional[str] = Non
             "language": getattr(finding, "language", None),
             "confidence": getattr(finding, "confidence", None),
             **(getattr(finding, "metadata", {}) or {}),
+            "scanner_risk_category": raw_risk,
         },
     )
 

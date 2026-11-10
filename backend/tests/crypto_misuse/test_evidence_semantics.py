@@ -4,6 +4,7 @@ CRITICAL INVARIANT: NOT_OBSERVABLE != VULNERABLE.
 
 from app.scanners.crypto_misuse.scanner import CryptoMisuseScanner
 from app.scanners.crypto_misuse.models import EvidenceStatus, FindingSeverity, MisuseFinding
+from app.scanners.crypto_misuse.evidence import is_binary_content
 
 
 def test_evidence_status_validity():
@@ -77,3 +78,32 @@ def test_finding_all_required_fields_present():
     assert hasattr(f, "recommendation") and f.recommendation
     assert hasattr(f, "metadata") and isinstance(f.metadata, dict)
 
+
+def test_binary_content_detects_null_bytes():
+    assert is_binary_content(b"hello\x00world")
+
+
+def test_binary_content_detects_control_characters():
+    assert is_binary_content(b"hello\x01world")
+
+
+def test_binary_content_allows_normal_text_formatting():
+    content = b"password = 'test'\t\r\nnext_line = True"
+    assert not is_binary_content(content)
+
+
+def test_binary_content_allows_valid_utf8():
+    content = "message = 'नमस्ते'".encode("utf-8")
+    assert not is_binary_content(content)
+
+
+def test_binary_content_allows_empty_content():
+    assert not is_binary_content(b"")
+
+
+def test_binary_content_detects_invalid_utf8():
+    assert is_binary_content(b"hello\xffworld")
+
+
+def test_binary_content_detects_del_character():
+    assert is_binary_content(b"hello\x7fworld")
