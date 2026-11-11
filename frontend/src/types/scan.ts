@@ -589,3 +589,50 @@ export type WhatIfMigrationResult = {
   explanation: string;
   created_at: string;
 };
+
+// ==============================================================================
+// TASK 5: COMPREHENSIVE REPORT DOWNLOADS & AUDIT VERIFICATION
+// ==============================================================================
+
+export type AuditRecord = {
+  record_id: string;
+  assessment_id: string;
+  assessment_hash: string;
+  previous_hash: string;
+  current_hash: string;
+  timestamp: string;
+  schema_version: string;
+  canonical_payload?: string | null;
+};
+
+export type AuditVerificationResult = {
+  valid: boolean;
+  record_id?: string | null;
+  error?: string | null;
+  records_checked: number;
+  details: Record<string, unknown>;
+};
+
+export type CompleteAssessmentReport = {
+  metadata: Record<string, unknown>;
+  report_metadata: Record<string, unknown>;
+  executive_summary: Record<string, unknown>;
+  system: Record<string, unknown>;
+  system_metadata: Record<string, unknown>;
+  quantum_posture: Record<string, unknown>;
+  classical_posture: Record<string, unknown>;
+  priority: Record<string, unknown>;
+  priority_factors: Record<string, unknown>;
+  findings: unknown[];
+  key_protection_chain: Record<string, unknown>;
+  crypto_agility: Record<string, unknown>;
+  migration_impact: Record<string, unknown>;
+  ranked_upgrade_plan: RankedUpgradePlan;
+  cbom: Record<string, unknown>;
+  evidence_gaps: Record<string, unknown>[];
+  observability: Record<string, unknown>;
+  what_if?: Record<string, unknown> | null;
+  what_if_results?: Record<string, unknown> | null;
+  audit: AuditRecord;
+  audit_metadata: AuditRecord;
+};

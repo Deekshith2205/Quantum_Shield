@@ -6,6 +6,9 @@ import type {
   RankedUpgradePlan,
   WhatIfMigrationRequest,
   WhatIfMigrationResult,
+  AuditRecord,
+  AuditVerificationResult,
+  CompleteAssessmentReport,
 } from '../types/scan';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -216,4 +219,96 @@ export async function checkBackendHealth(): Promise<boolean> {
     }
   }
   return false;
+}
+
+// ==============================================================================
+// TASK 5: COMPREHENSIVE REPORT DOWNLOADS & AUDIT VERIFICATION
+// ==============================================================================
+
+export async function getBankingSystemJsonReport(
+  systemId: string
+): Promise<CompleteAssessmentReport> {
+  const path = `/api/banking/systems/${encodeURIComponent(systemId)}/report/json`;
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`);
+  } catch {
+    try {
+      response = await fetch(`http://127.0.0.1:8000${path}`);
+    } catch {
+      throw new Error('Unable to connect to the report service.');
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || `JSON report request failed with HTTP ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function getBankingSystemPdfReport(
+  systemId: string
+): Promise<Blob> {
+  const path = `/api/banking/systems/${encodeURIComponent(systemId)}/report/pdf`;
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`);
+  } catch {
+    try {
+      response = await fetch(`http://127.0.0.1:8000${path}`);
+    } catch {
+      throw new Error('Unable to connect to the PDF report service.');
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || `PDF report request failed with HTTP ${response.status}`
+    );
+  }
+
+  return response.blob();
+}
+
+export async function verifyAuditRecord(
+  record: AuditRecord
+): Promise<AuditVerificationResult> {
+  const path = '/api/audit/verify';
+  const options: RequestInit = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ record }),
+  };
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, options);
+  } catch {
+    try {
+      response = await fetch(`http://127.0.0.1:8000${path}`, options);
+    } catch {
+      throw new Error('Unable to connect to the audit verification service.');
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || `Audit verification failed with HTTP ${response.status}`
+    );
+  }
+
+  return response.json();
 }
