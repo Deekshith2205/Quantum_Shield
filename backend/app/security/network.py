@@ -10,9 +10,12 @@ Enforces:
 
 import ipaddress
 import logging
-import socket
+import time
 from dataclasses import dataclass
 from typing import List, Tuple, Set
+
+import dns.exception
+import dns.resolver
 
 from app.scanners.domain_validator import DomainValidationError
 
@@ -130,73 +133,114 @@ def resolve_and_validate_hostname(
     hostname: str, timeout_seconds: float = 4.0
 ) -> SafeResolutionResult:
     """
-    Resolves hostname ONCE, collects ALL A and AAAA records, and validates EVERY resolved IP.
-    
-    If ANY resolved IP is private, reserved, loopback, multicast, or unsafe:
-        Raises UnsafeTargetError immediately (rejects mixed DNS responses).
-        
-    Returns:
-        SafeResolutionResult with the selected public IP (to be used directly in socket.connect)
-        and list of all verified public IPs.
+    Resolves A and AAAA records within one shared deadline and validates
+    EVERY returned IP address.
+
+    Fails closed if either lookup times out or encounters a DNS error.
+    A missing record type (NoAnswer) is acceptable.
+
+    Returns a validated IP for direct socket connection, preventing
+    DNS rebinding between validation and connection.
     """
     clean_hostname = hostname.strip().lower().rstrip(".")
 
     if not clean_hostname:
         raise DnsResolutionError("Hostname cannot be empty.")
 
-    socket.setdefaulttimeout(timeout_seconds)
+    if timeout_seconds <= 0:
+        raise DnsResolutionError("DNS timeout must be greater than zero.")
 
-    try:
-        addr_info = socket.getaddrinfo(
-            clean_hostname,
-            None,
-            family=socket.AF_UNSPEC,
-            type=socket.SOCK_STREAM,
-        )
-    except socket.gaierror as e:
-        logger.warning(f"DNS lookup failed for '{clean_hostname}': {e}")
-        raise DnsResolutionError(
-            f"DNS resolution failed for '{clean_hostname}': {e.strerror or 'Host not found'}"
-        )
-    except socket.timeout:
-        logger.warning(f"DNS lookup timed out for '{clean_hostname}' after {timeout_seconds}s")
-        raise DnsResolutionError(f"DNS resolution timed out for '{clean_hostname}'.")
-    except Exception as e:
-        logger.warning(f"DNS lookup unexpected error for '{clean_hostname}': {e}")
-        raise DnsResolutionError(f"DNS resolution error for '{clean_hostname}': {str(e)}")
+    deadline = time.monotonic() + timeout_seconds
 
-    if not addr_info:
-        raise DnsResolutionError(f"No DNS records returned for '{clean_hostname}'.")
-
-    # Collect unique IP strings preserving order
     all_resolved_ips: List[str] = []
     seen: Set[str] = set()
 
-    for entry in addr_info:
-        sockaddr = entry[4]
-        ip_str = sockaddr[0]
-        if ip_str not in seen:
-            seen.add(ip_str)
-            all_resolved_ips.append(ip_str)
+    try:
+        resolver = dns.resolver.Resolver(configure=True)
+
+        for record_type in ("A", "AAAA"):
+            remaining = deadline - time.monotonic()
+
+            if remaining <= 0:
+                raise DnsResolutionError(
+                    f"DNS resolution timed out for '{clean_hostname}'."
+                )
+
+            try:
+                answers = resolver.resolve(
+                    clean_hostname,
+                    record_type,
+                    lifetime=remaining,
+                    search=False,
+                )
+
+                for answer in answers:
+                    ip_str = str(answer.address)
+
+                    if ip_str not in seen:
+                        seen.add(ip_str)
+                        all_resolved_ips.append(ip_str)
+
+            except dns.resolver.NoAnswer:
+                # This record type does not exist; the other may still resolve.
+                continue
+
+    except dns.exception.Timeout as e:
+        logger.warning(
+            "DNS lookup timed out for '%s' within %.2fs: %s",
+            clean_hostname,
+            timeout_seconds,
+            e,
+        )
+        raise DnsResolutionError(
+            f"DNS resolution timed out for '{clean_hostname}'."
+        ) from e
+
+    except dns.exception.DNSException as e:
+        logger.warning(
+            "DNS lookup failed for '%s': %s",
+            clean_hostname,
+            e,
+        )
+        raise DnsResolutionError(
+            f"DNS resolution failed for '{clean_hostname}': {e}"
+        ) from e
+
+    except Exception as e:
+        logger.warning(
+            "Unexpected DNS error for '%s': %s",
+            clean_hostname,
+            e,
+        )
+        raise DnsResolutionError(
+            f"DNS resolution error for '{clean_hostname}': {e}"
+        ) from e
 
     if not all_resolved_ips:
-        raise DnsResolutionError(f"Could not extract any IP addresses for '{clean_hostname}'.")
+        raise DnsResolutionError(
+            f"No DNS records returned for '{clean_hostname}'."
+        )
 
-    # Step 3 & 4: Validate EVERY resolved address.
-    # Reject target if ANY address is unsafe (mixed DNS answers / rebinding defense).
+    # Validate EVERY resolved address. Reject mixed public/private responses.
     for ip_str in all_resolved_ips:
         is_safe, reason = is_safe_public_ip(ip_str)
+
         if not is_safe:
             logger.warning(
-                f"Prohibited IP target detected for '{clean_hostname}': {ip_str} - {reason}"
+                "Prohibited IP target detected for '%s': %s - %s",
+                clean_hostname,
+                ip_str,
+                reason,
             )
             raise UnsafeTargetError(
                 "Target domain resolves to a prohibited, private, or non-public address."
             )
 
-    # All resolved addresses are public and safe.
-    # Select primary IP: prefer IPv4 for network stability, otherwise select first IPv6
-    ipv4_candidates = [ip for ip in all_resolved_ips if ":" not in ip]
+    # Prefer IPv4; otherwise select the first validated IPv6 address.
+    ipv4_candidates = [
+        ip for ip in all_resolved_ips if ":" not in ip
+    ]
+
     if ipv4_candidates:
         selected_ip = ipv4_candidates[0]
         ip_version = "IPv4"
@@ -205,8 +249,10 @@ def resolve_and_validate_hostname(
         ip_version = "IPv6"
 
     logger.info(
-        f"DNS resolution verified public target '{clean_hostname}' -> {selected_ip} "
-        f"({len(all_resolved_ips)} total records verified)"
+        "DNS resolution verified public target '%s' -> %s (%d total records verified)",
+        clean_hostname,
+        selected_ip,
+        len(all_resolved_ips),
     )
 
     return SafeResolutionResult(
