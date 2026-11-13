@@ -458,6 +458,55 @@ export type BankingRiskAssessment = {
   created_at?: string;
 };
 
+export type UpgradeScoreBreakdown = {
+  governing_technical_risk: number;
+  technical_risk_factor: number;
+  criticality_score: number;
+  sensitivity_score: number;
+  lifetime_score: number;
+  exposure_score: number;
+  migration_effort_score: number;
+  business_exposure_factor: number;
+  migration_effort_factor: number;
+  composite_urgency_factor: number;
+};
+
+export type RankedUpgradeItem = {
+  rank: number;
+  system_id: string;
+  system_name: string;
+  system: string;
+  priority: MigrationPriority;
+  priority_score: number;
+  quantum_score: number;
+  classical_score: number;
+  score_breakdown: UpgradeScoreBreakdown;
+  criticality: string;
+  sensitivity: string;
+  data_lifetime: string;
+  lifetime: string;
+  exposure: string;
+  migration_impact: string;
+  top_findings: string[];
+  key_protection_chain: Record<string, string>;
+  crypto_agility: string;
+  evidence_gaps: string[];
+  recommended_migration: string;
+  recommended_upgrade: string;
+  migration_complexity: string;
+  estimated_migration_complexity: string;
+};
+
+export type RankedUpgradePlan = {
+  timestamp: string;
+  total_systems: number;
+  p0_count: number;
+  p1_count: number;
+  p2_count: number;
+  p3_count: number;
+  queue: RankedUpgradeItem[];
+};
+
 export type ScanResponse = {
   target: TargetInfo;
   scan_status: string;
@@ -481,6 +530,60 @@ export type ApiError = {
   error: string;
   detail: string;
   target_domain?: string;
+};
+
+
+export type NormalizedFinding = {
+  rule_id: string;
+  title: string;
+  value: string;
+  role: string;
+  source: string;
+  source_file?: string | null;
+  source_line?: number | null;
+  evidence_status: string;
+  severity: string;
+  risk: string;
+  message: string;
+  recommendation: string;
+  system_id?: string | null;
+  asset_id?: string | null;
+  layer?: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type ArtifactFindingsResponse = {
+  scan_status: 'SUCCESS';
+  files_scanned: number;
+  finding_count: number;
+  findings: NormalizedFinding[];
+};
+
+export type UploadedCertificateInfo = {
+  subject_cn: string | null;
+  subject_org: string | null;
+  subject_alt_names: string[];
+  issuer_cn: string | null;
+  issuer_org: string | null;
+  serial_number: string;
+  fingerprint_sha256: string;
+  not_valid_before: string;
+  not_valid_after: string;
+  days_remaining: number;
+  is_expired: boolean;
+  public_key_algorithm: string;
+  key_size_bits: number | null;
+  curve_name: string | null;
+  signature_algorithm: string;
+  signature_hash_algorithm: string | null;
+};
+
+export type UploadedCertificateResponse = {
+  scan_status: 'SUCCESS';
+  source: 'UPLOADED_CERTIFICATE';
+  source_file: string;
+  evidence_status: 'OBSERVED';
+  certificate: UploadedCertificateInfo;
 };
 
 // ==============================================================================
@@ -539,4 +642,51 @@ export type WhatIfMigrationResult = {
   comparison: WhatIfMigrationComparison;
   explanation: string;
   created_at: string;
+};
+
+// ==============================================================================
+// TASK 5: COMPREHENSIVE REPORT DOWNLOADS & AUDIT VERIFICATION
+// ==============================================================================
+
+export type AuditRecord = {
+  record_id: string;
+  assessment_id: string;
+  assessment_hash: string;
+  previous_hash: string;
+  current_hash: string;
+  timestamp: string;
+  schema_version: string;
+  canonical_payload?: string | null;
+};
+
+export type AuditVerificationResult = {
+  valid: boolean;
+  record_id?: string | null;
+  error?: string | null;
+  records_checked: number;
+  details: Record<string, unknown>;
+};
+
+export type CompleteAssessmentReport = {
+  metadata: Record<string, unknown>;
+  report_metadata: Record<string, unknown>;
+  executive_summary: Record<string, unknown>;
+  system: Record<string, unknown>;
+  system_metadata: Record<string, unknown>;
+  quantum_posture: Record<string, unknown>;
+  classical_posture: Record<string, unknown>;
+  priority: Record<string, unknown>;
+  priority_factors: Record<string, unknown>;
+  findings: unknown[];
+  key_protection_chain: Record<string, unknown>;
+  crypto_agility: Record<string, unknown>;
+  migration_impact: Record<string, unknown>;
+  ranked_upgrade_plan: RankedUpgradePlan;
+  cbom: Record<string, unknown>;
+  evidence_gaps: Record<string, unknown>[];
+  observability: Record<string, unknown>;
+  what_if?: Record<string, unknown> | null;
+  what_if_results?: Record<string, unknown> | null;
+  audit: AuditRecord;
+  audit_metadata: AuditRecord;
 };

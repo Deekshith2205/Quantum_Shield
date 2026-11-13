@@ -145,16 +145,23 @@ def test_sample_data_paths_are_independent_of_working_directory(monkeypatch):
     assert backend_config_count == root_config_count
     assert backend_crypto_count == root_crypto_count
 
+
 def test_banking_profiles_scan_sample_source_not_test_fixtures():
     """Each mapped banking profile must scan its own sample source directory."""
     expected_counts = {
         "BANK-PROF-PAYMENT-GATEWAY": 6,
         "BANK-PROF-CORE-BANKING": 6,
-        "BANK-PROF-KYC-DB": 11,
         "BANK-PROF-NET-BANKING": 7,
         "BANK-PROF-ATM-NETWORK": 6,
+        "BANK-PROF-INTERBANK-GATEWAY": 11,
     }
 
+    # KYC has a dedicated configuration fixture but intentionally no
+    # source-code mapping. Its configuration observations are tested
+    # separately; do not manufacture source-code findings for it.
+    assert "BANK-PROF-KYC-DB" not in SYSTEM_CODE_MAP
+
+    # Every expected source-backed profile must have a mapping.
     assert set(expected_counts).issubset(SYSTEM_CODE_MAP)
 
     for system_id, expected_count in expected_counts.items():

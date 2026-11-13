@@ -355,35 +355,63 @@ def test_aes_256_gcm_alone_does_not_produce_critical_risk():
 # 4. SYSTEM COMPARISON & RANKING ORDER (SECTION 16)
 # ==============================================================================
 
+
 def test_synthetic_profiles_migration_ranking_order():
     """
-    Verifies that the 5 synthetic banking profiles are ranked accurately:
+    Verifies that all 8 synthetic banking profiles are ranked accurately.
+
+    Expected order:
     1. Core Banking (P0)
     2. Customer / KYC Vault (P0)
     3. ATM Network (P1)
-    4. Net Banking Portal (P2)
-    5. Modern Payment Gateway (P3 - already has hybrid ML-KEM)
+    4. Inter-bank Gateway (P1)
+    5. Administrative VPN (P2)
+    6. Net Banking Portal (P2)
+    7. Modern Payment Gateway (P3)
+    8. UPI Payment Service (P3 - PQC pilot, best-prepared)
     """
     rankings = get_all_synthetic_risk_assessments()
-    assert len(rankings) == 5
 
-    # Scores must be in descending order
+    expected_order = [
+        "BANK-PROF-CORE-BANKING",
+        "BANK-PROF-KYC-DB",
+        "BANK-PROF-ATM-NETWORK",
+        "BANK-PROF-INTERBANK-GATEWAY",
+        "BANK-PROF-ADMIN-VPN",
+        "BANK-PROF-NET-BANKING",
+        "BANK-PROF-PAYMENT-GATEWAY",
+        "BANK-PROF-UPI",
+    ]
+
+    assert len(rankings) == 8
+    assert [r.asset_id for r in rankings] == expected_order
+
+    # Scores must be in descending order.
     scores = [r.priority_score for r in rankings]
     assert scores == sorted(scores, reverse=True)
 
-    # Top ranked system must be Core Banking (P0)
+    # Highest-risk system: Core Banking.
     assert rankings[0].asset_id == "BANK-PROF-CORE-BANKING"
     assert rankings[0].migration_priority == MigrationPriority.P0
-    assert rankings[0].priority_score >= 85
+    assert rankings[0].priority_score == 92
 
-    # Second ranked system must be KYC Database (P0)
+    # Second-highest-risk system: KYC Database.
     assert rankings[1].asset_id == "BANK-PROF-KYC-DB"
     assert rankings[1].migration_priority == MigrationPriority.P0
-    assert rankings[1].priority_score >= 85
+    assert rankings[1].priority_score == 85
 
-    # Modern payment gateway with hybrid ML-KEM must be lowest priority (P3)
-    assert rankings[-1].asset_id == "BANK-PROF-PAYMENT-GATEWAY"
+    # Inter-bank Gateway must be included in the P1 group.
+    assert rankings[3].asset_id == "BANK-PROF-INTERBANK-GATEWAY"
+    assert rankings[3].migration_priority == MigrationPriority.P1
+
+    # UPI PQC pilot must have the lowest risk score.
+    assert rankings[-1].asset_id == "BANK-PROF-UPI"
     assert rankings[-1].migration_priority == MigrationPriority.P3
+    assert rankings[-1].priority_score == 17
+
+    # Payment Gateway is also P3, but ranks above UPI.
+    assert rankings[-2].asset_id == "BANK-PROF-PAYMENT-GATEWAY"
+    assert rankings[-2].migration_priority == MigrationPriority.P3
 
 
 # ==============================================================================
@@ -439,20 +467,23 @@ def test_evidence_provenance_distinction_and_invariants():
 # 6. API ENDPOINTS TESTS: /api/banking/risk
 # ==============================================================================
 
+
 def test_api_get_banking_risk_rankings():
-    """Tests GET /api/banking/risk returns all 5 systems sorted with complete multidimensional fields."""
+    """Tests GET /api/banking/risk returns all 8 systems sorted with complete multidimensional fields."""
     DEFAULT_RATE_LIMITER.reset()
     response = client.get("/api/banking/risk")
     assert response.status_code == 200
+
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 5
+    assert len(data) == 8
 
-    # Check top profile
+    # Check highest-risk profile.
     top = data[0]
     assert top["asset_id"] == "BANK-PROF-CORE-BANKING"
     assert top["migration_priority"] == "P0"
     assert top["priority_score"] >= 85
+
     assert "technical_risk" in top
     assert "business_context" in top
     assert "key_protection" in top
@@ -460,6 +491,11 @@ def test_api_get_banking_risk_rankings():
     assert len(top["contributors"]) == 6
     assert "explanation" in top
     assert len(top["explanation"]) > 20
+
+    # Verify the best-prepared UPI profile is at the bottom.
+    assert data[-1]["asset_id"] == "BANK-PROF-UPI"
+    assert data[-1]["migration_priority"] == "P3"
+
 
 
 def test_api_get_banking_profile_risk_by_id():

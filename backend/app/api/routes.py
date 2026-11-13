@@ -76,14 +76,13 @@ async def run_scan(request: ScanRequest, http_request: Request):
             },
         )
 
-    # Extract client IP for rate limiting
-    forwarded = http_request.headers.get("x-forwarded-for")
-    if forwarded:
-        client_ip = forwarded.split(",")[0].strip()
-    elif http_request.client:
-        client_ip = http_request.client.host
-    else:
-        client_ip = "127.0.0.1"
+    # Use the direct connection address; never trust caller-supplied
+    # X-Forwarded-For unless a trusted proxy is explicitly configured.
+    client_ip = (
+        http_request.client.host
+        if http_request.client
+        else "127.0.0.1"
+    )
 
     # Enforce in-memory sliding window rate limit (10 scans / min / IP)
     allowed, retry_after = DEFAULT_RATE_LIMITER.is_allowed(client_ip)
@@ -235,14 +234,13 @@ async def run_audit(request: AuditRequest, http_request: Request):
             },
         )
 
-    # Extract client IP for rate limiting
-    forwarded = http_request.headers.get("x-forwarded-for")
-    if forwarded:
-        client_ip = forwarded.split(",")[0].strip()
-    elif http_request.client:
-        client_ip = http_request.client.host
-    else:
-        client_ip = "127.0.0.1"
+    # Use the direct connection address; never trust caller-supplied
+    # X-Forwarded-For unless a trusted proxy is explicitly configured.
+    client_ip = (
+        http_request.client.host
+        if http_request.client
+        else "127.0.0.1"
+    )
 
     # Enforce sliding window rate limit
     allowed, retry_after = DEFAULT_RATE_LIMITER.is_allowed(client_ip)

@@ -2,8 +2,8 @@ import React from 'react';
 import { Sun, ArrowRight, ShieldCheck, Download } from 'lucide-react';
 
 interface HeaderProps {
-  activeView: 'scanner' | 'catalog' | 'risk' | 'simulator';
-  onSelectView: (view: 'scanner' | 'catalog' | 'risk' | 'simulator') => void;
+  activeView: 'scanner' | 'catalog' | 'risk' | 'simulator' | 'upgrade-plan';
+  onSelectView: (view: 'scanner' | 'catalog' | 'risk' | 'simulator' | 'upgrade-plan') => void;
   onOpenDocumentation: () => void;
   onOpenExportModal?: () => void;
   hasScanData?: boolean;
@@ -15,7 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectView,
   onOpenDocumentation,
   onOpenExportModal,
-  hasScanData = false,
+  hasScanData,
   onGetStarted,
 }) => {
   return (
@@ -89,6 +89,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             type="button"
+            onClick={() => onSelectView('upgrade-plan')}
+            className={`font-medium transition-colors cursor-pointer py-1 relative ${
+              activeView === 'upgrade-plan'
+                ? 'text-[#0F172A] font-semibold after:absolute after:bottom-[-29px] after:left-0 after:right-0 after:h-[2px] after:bg-[#5755D9] after:rounded-full'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Upgrade Plan
+          </button>
+
+          <button
+            type="button"
             onClick={onOpenDocumentation}
             className="font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer py-1"
           >
@@ -142,6 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           Scanner
         </button>
+
         <button
           onClick={() => onSelectView('catalog')}
           className={`py-1 px-2 rounded font-medium ${
@@ -150,6 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           Banking (5)
         </button>
+
         <button
           onClick={() => onSelectView('risk')}
           className={`py-1 px-2 rounded font-medium ${
@@ -158,6 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           Priority
         </button>
+
         <button
           onClick={() => onSelectView('simulator')}
           className={`py-1 px-2 rounded font-medium ${
@@ -166,6 +181,19 @@ export const Header: React.FC<HeaderProps> = ({
         >
           What-If
         </button>
+
+        <button
+          type="button"
+          onClick={() => onSelectView('upgrade-plan')}
+          className={`py-1 px-2 rounded font-medium ${
+            activeView === 'upgrade-plan'
+              ? 'text-[#5755D9] font-semibold'
+              : 'text-slate-600'
+          }`}
+        >
+          Upgrade
+        </button>
+
         <button
           onClick={onOpenDocumentation}
           className="py-1 px-2 rounded font-medium text-slate-600"

@@ -1,3 +1,4 @@
+
 """Integration tests for JSON/PDF Reports and Ranked Upgrade Planner."""
 
 import pytest
@@ -37,11 +38,11 @@ def test_complete_json_report_structure():
     for section in required_sections:
         assert section in r_dict, f"Missing required report section: {section}"
 
-    # Verify JSON serializability
+    # Verify JSON serializability.
     serialized = json.dumps(r_dict, default=str)
     assert len(serialized) > 500
 
-    # Verify secrets are redacted
+    # Verify secrets are redacted.
     assert "AKIA" not in serialized
     assert "-----BEGIN RSA PRIVATE KEY-----" not in serialized
 
@@ -51,40 +52,51 @@ def test_pdf_report_generation():
     pdf_bytes = generate_pdf_report("BANK-PROF-CORE-BANKING")
     assert isinstance(pdf_bytes, bytes)
     assert len(pdf_bytes) > 2000
-    assert pdf_bytes.startswith(b"%PDF-"), "Generated file does not have a valid PDF magic header"
+    assert pdf_bytes.startswith(b"%PDF-"), (
+        "Generated file does not have a valid PDF magic header"
+    )
 
 
 def test_pdf_report_for_all_banking_profiles():
-    """PDF export must succeed across all synthetic banking systems without crashing."""
-    for sys_id in [
+    """PDF export must succeed across all 8 synthetic banking systems."""
+    system_ids = [
         "BANK-PROF-PAYMENT-GATEWAY",
         "BANK-PROF-CORE-BANKING",
         "BANK-PROF-KYC-DB",
         "BANK-PROF-NET-BANKING",
         "BANK-PROF-ATM-NETWORK",
-    ]:
+        "BANK-PROF-UPI",
+        "BANK-PROF-ADMIN-VPN",
+        "BANK-PROF-INTERBANK-GATEWAY",
+    ]
+
+    assert len(system_ids) == 8
+
+    for sys_id in system_ids:
         pdf = generate_pdf_report(sys_id)
-        assert len(pdf) > 2000
-        assert pdf.startswith(b"%PDF-")
+        assert len(pdf) > 2000, f"PDF too small for {sys_id}"
+        assert pdf.startswith(b"%PDF-"), (
+            f"Invalid PDF magic header for {sys_id}"
+        )
 
 
 def test_dynamic_ranked_upgrade_plan_calculation():
     """Ranked upgrade plan must be computed dynamically from the risk engine, not hardcoded."""
     plan = generate_ranked_upgrade_plan()
     assert isinstance(plan, RankedUpgradePlan)
-    assert plan.total_systems >= 5
+    assert plan.total_systems == 8
     assert len(plan.queue) == plan.total_systems
 
-    # Verify queue ordering by priority_score descending
+    # Verify queue ordering by priority_score descending.
     scores = [item.priority_score for item in plan.queue]
     assert scores == sorted(scores, reverse=True)
 
-    # Core Banking should lead the queue due to VERY_LONG lifetime + Criticality + Quantum-vulnerable KEK
+    # Core Banking should lead the queue due to VERY_LONG lifetime + Criticality + Quantum-vulnerable KEK.
     assert plan.queue[0].system_id == "BANK-PROF-CORE-BANKING"
     assert plan.queue[0].priority == "P0"
 
-    # Payment Gateway should be last due to modern hybrid PQC deployment
-    assert plan.queue[-1].system_id == "BANK-PROF-PAYMENT-GATEWAY"
+    # UPI PQC pilot should be last because it has the lowest verified risk score.
+    assert plan.queue[-1].system_id == "BANK-PROF-UPI"
     assert plan.queue[-1].priority == "P3"
 
     for idx, item in enumerate(plan.queue, start=1):

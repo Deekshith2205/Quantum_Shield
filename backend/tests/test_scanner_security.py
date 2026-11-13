@@ -12,9 +12,10 @@ Verifies:
 - Concurrency limiting (semaphore max 5, HTTP 429 on exhaustion).
 - Safe error disclosure (no internal IPs, no stack traces).
 """
-
 import socket
 import ssl
+import dns.exception
+import dns.resolver
 from unittest.mock import patch, MagicMock
 import pytest
 from starlette.testclient import TestClient
@@ -38,6 +39,29 @@ from app.scanners.tls_scanner import (
 
 client = TestClient(app)
 
+def _mock_dns_resolver(records_by_type):
+    """Create a mocked dnspython resolver for deterministic DNS security tests."""
+    resolver = MagicMock()
+
+    def mock_resolve(hostname, record_type, **kwargs):
+        records = records_by_type.get(record_type)
+
+        if isinstance(records, Exception):
+            raise records
+
+        if records is None:
+            raise dns.resolver.NoAnswer()
+
+        return [MagicMock(address=ip) for ip in records]
+
+    resolver.resolve.side_effect = mock_resolve
+
+    resolver_patcher = patch(
+        "app.security.network.dns.resolver.Resolver",
+        return_value=resolver,
+    )
+
+    return resolver_patcher, resolver
 
 # ============================================================================
 # 1. IP CLASSIFICATION & PROHIBITED RANGE TESTS
@@ -116,52 +140,115 @@ def test_legitimate_public_ips_allowed(ip_str: str):
 # ============================================================================
 
 def test_resolve_safe_public_domain():
-    mock_addrinfo = [
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.35", 0)),
-    ]
-    with patch("socket.getaddrinfo", return_value=mock_addrinfo):
+    resolver_patcher, mock_resolver = _mock_dns_resolver({
+        "A": ["93.184.216.34", "93.184.216.35"],
+        "AAAA": None,
+    })
+
+    with resolver_patcher:
         result = resolve_and_validate_hostname("example.com")
-        assert result.hostname == "example.com"
-        assert result.selected_ip == "93.184.216.34"
-        assert len(result.all_resolved_ips) == 2
-        assert result.ip_version == "IPv4"
+
+    assert result.hostname == "example.com"
+    assert result.selected_ip == "93.184.216.34"
+    assert result.all_resolved_ips == ["93.184.216.34", "93.184.216.35"]
+    assert result.ip_version == "IPv4"
+    assert mock_resolver.resolve.call_count == 2
 
 
 def test_mixed_dns_response_rejected():
-    """Crucial SSRF defense: if DNS returns mixed public and private addresses, reject immediately!"""
-    mock_mixed_addrinfo = [
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),  # Public
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 0)),        # Private (Attacker trick)
-    ]
-    with patch("socket.getaddrinfo", return_value=mock_mixed_addrinfo):
-        with pytest.raises(UnsafeTargetError, match="prohibited, private, or non-public"):
+    """Reject mixed public and private DNS answers across record types."""
+    resolver_patcher, _ = _mock_dns_resolver({
+        "A": ["93.184.216.34"],
+        "AAAA": ["::1"],
+    })
+
+    with resolver_patcher:
+        with pytest.raises(
+            UnsafeTargetError,
+            match="prohibited, private, or non-public",
+        ):
             resolve_and_validate_hostname("attacker-mixed.com")
 
 
 def test_cloud_metadata_dns_rejected():
-    """Verifies that DNS pointing to AWS metadata service 169.254.169.254 is rejected."""
-    mock_metadata_addrinfo = [
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("169.254.169.254", 0)),
-    ]
-    with patch("socket.getaddrinfo", return_value=mock_metadata_addrinfo):
-        with pytest.raises(UnsafeTargetError, match="prohibited, private, or non-public"):
+    """Reject DNS responses pointing to cloud metadata addresses."""
+    resolver_patcher, _ = _mock_dns_resolver({
+        "A": ["169.254.169.254"],
+        "AAAA": None,
+    })
+
+    with resolver_patcher:
+        with pytest.raises(
+            UnsafeTargetError,
+            match="prohibited, private, or non-public",
+        ):
             resolve_and_validate_hostname("metadata.evil.com")
 
 
 def test_ipv6_loopback_dns_rejected():
-    mock_ipv6_loopback = [
-        (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", 0, 0, 0)),
-    ]
-    with patch("socket.getaddrinfo", return_value=mock_ipv6_loopback):
-        with pytest.raises(UnsafeTargetError, match="prohibited, private, or non-public"):
+    resolver_patcher, _ = _mock_dns_resolver({
+        "A": None,
+        "AAAA": ["::1"],
+    })
+
+    with resolver_patcher:
+        with pytest.raises(
+            UnsafeTargetError,
+            match="prohibited, private, or non-public",
+        ):
             resolve_and_validate_hostname("loopback6.evil.com")
 
 
 def test_dns_resolution_failure():
-    with patch("socket.getaddrinfo", side_effect=socket.gaierror(-2, "Name or service not known")):
+    resolver_patcher, _ = _mock_dns_resolver({
+        "A": dns.exception.DNSException("simulated DNS failure"),
+        "AAAA": None,
+    })
+
+    with resolver_patcher:
         with pytest.raises(DnsResolutionError, match="DNS resolution failed"):
             resolve_and_validate_hostname("nonexistent.invalid")
+
+def test_dns_resolution_timeout():
+    """A DNS timeout must fail closed."""
+    resolver_patcher, mock_resolver = _mock_dns_resolver({
+        "A": dns.exception.Timeout(),
+        "AAAA": None,
+    })
+
+    with resolver_patcher:
+        with pytest.raises(DnsResolutionError, match="DNS resolution timed out"):
+            resolve_and_validate_hostname("slow-dns.example", timeout_seconds=1.0)
+
+    mock_resolver.resolve.assert_called_once()
+
+
+def test_dns_queries_share_one_overall_deadline():
+    """The AAAA query must receive only the remaining shared timeout."""
+    resolver_patcher, mock_resolver = _mock_dns_resolver({
+        "A": ["93.184.216.34"],
+        "AAAA": None,
+    })
+
+    with patch("app.security.network.time.monotonic", side_effect=[
+        100.0,  # Overall deadline initialization
+        100.2,  # Before A lookup
+        100.7,  # Before AAAA lookup
+    ]):
+        with resolver_patcher:
+            result = resolve_and_validate_hostname(
+                "example.com",
+                timeout_seconds=1.0,
+            )
+
+    assert result.selected_ip == "93.184.216.34"
+
+    calls = mock_resolver.resolve.call_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["lifetime"] == pytest.approx(0.8)
+    assert calls[1].kwargs["lifetime"] == pytest.approx(0.3)
+    assert calls[0].kwargs["search"] is False
+    assert calls[1].kwargs["search"] is False
 
 
 # ============================================================================
@@ -336,38 +423,80 @@ def test_rate_limiter_allows_up_to_limit():
     assert retry_after > 0
 
 
-def test_api_rate_limit_exceeded_returns_429():
+def test_api_rate_limit_ignores_spoofed_forwarded_for():
+    """A caller must not bypass rate limiting by spoofing X-Forwarded-For."""
     DEFAULT_RATE_LIMITER.reset()
-    client_ip = "203.0.113.99"
-    headers = {"X-Forwarded-For": client_ip}
 
-    # Simulate 10 requests hitting rate limit
+    # TestClient's direct connection address is "testclient".
+    actual_client_ip = "testclient"
+    spoofed_client_ip = "203.0.113.99"
+
+    # Exhaust the limit for the actual connection address.
     for _ in range(10):
-        DEFAULT_RATE_LIMITER.is_allowed(client_ip)
+        DEFAULT_RATE_LIMITER.is_allowed(actual_client_ip)
 
-    # 11th request to API
-    response = client.post("/api/scan", json={"domain": "example.com"}, headers=headers)
+    # A forged forwarded header must not change the rate-limit identity.
+    response = client.post(
+        "/api/scan",
+        json={"domain": "example.com"},
+        headers={"X-Forwarded-For": spoofed_client_ip},
+    )
+
     assert response.status_code == 429
     data = response.json()
     assert data["error"] == "RATE_LIMIT_EXCEEDED"
     assert "Retry-After" in response.headers
+
     DEFAULT_RATE_LIMITER.reset()
 
+def test_audit_api_rate_limit_ignores_spoofed_forwarded_for():
+    """A caller must not bypass audit rate limiting by spoofing X-Forwarded-For."""
+    DEFAULT_RATE_LIMITER.reset()
+
+    # TestClient's direct connection address is "testclient".
+    actual_client_ip = "testclient"
+    spoofed_client_ip = "203.0.113.99"
+
+    # Exhaust the limit for the actual connection address.
+    for _ in range(10):
+        DEFAULT_RATE_LIMITER.is_allowed(actual_client_ip)
+
+    # A forged forwarded header must not change the rate-limit identity.
+    response = client.post(
+        "/api/audit",
+        json={"domain": "example.com"},
+        headers={"X-Forwarded-For": spoofed_client_ip},
+    )
+
+    assert response.status_code == 429
+    data = response.json()
+    assert data["error"] == "RATE_LIMIT_EXCEEDED"
+    assert "Retry-After" in response.headers
+
+    DEFAULT_RATE_LIMITER.reset()
 
 def test_api_unsafe_target_returns_400_without_internal_ip():
-    """Verifies that an unsafe target returns HTTP 400 and does NOT leak internal IP."""
+    """Verify unsafe DNS targets return HTTP 400 without leaking internal IPs."""
     DEFAULT_RATE_LIMITER.reset()
-    mock_mixed = [
-        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 0)),
-    ]
-    with patch("socket.getaddrinfo", return_value=mock_mixed):
-        response = client.post("/api/scan", json={"domain": "internal-exploit.com"})
-        assert response.status_code == 400
-        data = response.json()
-        assert data["error"] == "UNSAFE_TARGET"
-        # Crucial: Ensure internal IP is NOT leaked in the client-facing response
-        assert "10.0.0.1" not in data["detail"]
-        assert "strictly prohibited" in data["detail"]
+
+    resolver_patcher, _ = _mock_dns_resolver({
+        "A": ["10.0.0.1"],
+        "AAAA": None,
+    })
+
+    with resolver_patcher:
+        response = client.post(
+            "/api/scan",
+            json={"domain": "internal-exploit.com"},
+        )
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data["error"] == "UNSAFE_TARGET"
+    assert "10.0.0.1" not in data["detail"]
+    assert "strictly prohibited" in data["detail"]
+
+    DEFAULT_RATE_LIMITER.reset()
 
 
 @pytest.mark.asyncio

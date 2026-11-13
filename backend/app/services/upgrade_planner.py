@@ -10,7 +10,11 @@ from typing import List, Dict, Any, Optional
 
 from app.models.banking import BankingAsset
 from app.models.profiles import get_synthetic_banking_profiles
-from app.models.upgrade_plan import RankedUpgradePlan, RankedUpgradeItem
+from app.models.upgrade_plan import (
+    RankedUpgradePlan,
+    RankedUpgradeItem,
+    UpgradeScoreBreakdown,
+)
 from app.services.banking_risk_engine import evaluate_banking_risk
 from app.services.migration_impact_engine import evaluate_migration_impact
 from app.services.finding_normalizer import (
@@ -34,9 +38,10 @@ SYSTEM_CONFIG_MAP = {
     "BANK-PROF-NET-BANKING": PROJECT_ROOT / "backend/sample_data/banking/net_banking",
     "BANK-PROF-PAYMENT-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/payment_gateway",
     "BANK-PROF-ATM-NETWORK": PROJECT_ROOT / "backend/sample_data/banking/atm",
-    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/interbank",
+    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/kyc_vault",
     "BANK-PROF-UPI": PROJECT_ROOT / "backend/sample_data/banking/upi_backend",
     "BANK-PROF-ADMIN-VPN": PROJECT_ROOT / "backend/sample_data/banking/admin_vpn",
+    "BANK-PROF-INTERBANK-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/interbank",
 }
 
 
@@ -46,7 +51,7 @@ SYSTEM_CODE_MAP = {
     "BANK-PROF-NET-BANKING": PROJECT_ROOT / "backend/sample_data/banking/net_banking/src",
     "BANK-PROF-PAYMENT-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/payment_gateway/src",
     "BANK-PROF-ATM-NETWORK": PROJECT_ROOT / "backend/sample_data/banking/atm/src",
-    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/interbank/src",
+    "BANK-PROF-INTERBANK-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/interbank/src",
 }
 
 
@@ -121,12 +126,26 @@ def generate_ranked_upgrade_plan(
             top_findings = [f.title for f in unified_findings[:2]]
 
         # Key Protection Chain Posture Summary
+        # Missing configuration is not evidence of a vulnerable algorithm.
         chain = p.cryptography.key_chain if p.cryptography else None
+
         chain_summary = {
-            "data_encryption": chain.data_encryption if chain else "AES-256",
-            "key_wrapping": chain.key_wrapping if chain else "RSA-2048",
-            "key_storage": chain.key_storage if chain else "HSM",
-            "authentication": chain.authentication if chain else "RSA-2048",
+            "data_encryption": (
+                chain.data_encryption or "Not specified"
+                if chain else "Not specified"
+            ),
+            "key_wrapping": (
+                chain.key_wrapping or "Not specified"
+                if chain else "Not specified"
+            ),
+            "key_storage": (
+                chain.key_storage or "Not specified"
+                if chain else "Not specified"
+            ),
+            "authentication": (
+                chain.authentication or "Not specified"
+                if chain else "Not specified"
+            ),
         }
 
         # Evidence gaps extraction
@@ -208,6 +227,32 @@ def generate_ranked_upgrade_plan(
                 system=p.name,
                 priority=prio_band,
                 priority_score=r.priority_score,
+                score_breakdown=UpgradeScoreBreakdown(
+                    governing_technical_risk=r.technical_risk.governing_technical_risk,
+                    technical_risk_factor=round(
+                        r.technical_risk.governing_technical_risk / 4.0, 4
+                    ),
+                    criticality_score=r.business_context.criticality_score,
+                    sensitivity_score=r.business_context.sensitivity_score,
+                    lifetime_score=r.business_context.lifetime_score,
+                    exposure_score=r.business_context.exposure_score,
+                    migration_effort_score=r.business_context.migration_effort_score,
+                    business_exposure_factor=r.business_context.business_exposure_factor,
+                    migration_effort_factor=round(
+                        r.business_context.migration_effort_score / 4.0, 4
+                    ),
+                    composite_urgency_factor=round(
+                        (
+                            0.70 * r.business_context.business_exposure_factor
+                        )
+                        + (
+                            0.30
+                            * r.business_context.migration_effort_score
+                            / 4.0
+                        ),
+                        4,
+                    ),
+                ),
                 quantum_score=item["q_score"],
                 classical_score=item["c_score"],
                 criticality=p.criticality.value,

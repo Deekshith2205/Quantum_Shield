@@ -5,6 +5,20 @@ Deterministic prioritized migration roadmap across representative banking system
 from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
 
+class UpgradeScoreBreakdown(BaseModel):
+    """Transparent inputs and factors behind a system's migration priority."""
+    governing_technical_risk: int = Field(..., ge=0, le=4)
+    technical_risk_factor: float = Field(..., ge=0.0, le=1.0)
+
+    criticality_score: int = Field(..., ge=1, le=4)
+    sensitivity_score: int = Field(..., ge=1, le=4)
+    lifetime_score: int = Field(..., ge=1, le=4)
+    exposure_score: int = Field(..., ge=1, le=4)
+    migration_effort_score: int = Field(..., ge=1, le=4)
+
+    business_exposure_factor: float = Field(..., ge=0.0, le=1.0)
+    migration_effort_factor: float = Field(..., ge=0.0, le=1.0)
+    composite_urgency_factor: float = Field(..., ge=0.0, le=1.0)
 
 class RankedUpgradeItem(BaseModel):
     """Single prioritized banking system in the ranked upgrade queue."""
@@ -14,6 +28,10 @@ class RankedUpgradeItem(BaseModel):
     system: str = Field(..., description="Alias for system_name")
     priority: str = Field(..., description="Priority band: P0, P1, P2, P3")
     priority_score: int = Field(..., description="Deterministic priority score (0-100)")
+    score_breakdown: UpgradeScoreBreakdown = Field(
+        ...,
+        description="Normalized factors used to explain the deterministic priority score",
+    )
     quantum_score: int = Field(..., description="Technical quantum vulnerability score (0-100)")
     classical_score: int = Field(..., description="Technical classical vulnerability score (0-100)")
     criticality: str = Field(..., description="Business criticality level")

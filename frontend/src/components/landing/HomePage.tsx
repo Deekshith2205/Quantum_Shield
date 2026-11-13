@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { HeroSection } from './HeroSection';
 import { CapabilityGrid } from './CapabilityGrid';
+import { ArtifactUploadPanel } from '../ArtifactUploadPanel';
 import type { ScanResponse } from '../../types/scan';
 import { ScoreCard } from '../ScoreCard';
 import { ExecutiveSummaryCard } from '../ExecutiveSummaryCard';
@@ -82,6 +83,10 @@ export const HomePage: React.FC<HomePageProps> = ({
         onTrySimulation={() => onSelectView('simulator')}
         onExploreBankingSystems={() => onSelectView('catalog')}
       />
+      {/* 4. Uploaded Artifact Analysis */}
+      <div className="w-full px-6 sm:px-10 lg:px-[85px] py-10 border-t border-slate-200/80">
+        <ArtifactUploadPanel />
+      </div>
 
       {/* 4. Live Cryptographic Scan Telemetry & Results View */}
       {scanData && !isLoading && (
