@@ -9,6 +9,8 @@ import type {
   AuditRecord,
   AuditVerificationResult,
   CompleteAssessmentReport,
+  ArtifactFindingsResponse,
+  UploadedCertificateResponse,
 } from '../types/scan';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -311,4 +313,114 @@ export async function verifyAuditRecord(
   }
 
   return response.json();
+}
+
+// ==============================================================================
+// TASK 6: UPLOADED ARTIFACT SCANNING
+// ==============================================================================
+
+const MAX_UPLOAD_FILE_SIZE = 1024 * 1024;
+const MAX_UPLOAD_TOTAL_SIZE = 5 * 1024 * 1024;
+const MAX_UPLOAD_FILES = 20;
+
+async function readUploadFiles(files: File[]): Promise<
+  { name: string; content: string }[]
+> {
+  if (files.length === 0 || files.length > MAX_UPLOAD_FILES) {
+    throw new Error('Select between 1 and 20 files.');
+  }
+
+  const totalSize = files.reduce((total, file) => total + file.size, 0);
+
+  if (files.some((file) => file.size > MAX_UPLOAD_FILE_SIZE)) {
+    throw new Error('Each file must be 1 MiB or smaller.');
+  }
+
+  if (totalSize > MAX_UPLOAD_TOTAL_SIZE) {
+    throw new Error('Combined file size must not exceed 5 MiB.');
+  }
+
+  try {
+    return await Promise.all(
+      files.map(async (file) => ({
+        name: file.name,
+        content: await file.text(),
+      }))
+    );
+  } catch {
+    throw new Error('Unable to read the selected files.');
+  }
+}
+
+async function postUploadJson<T>(
+  path: string,
+  payload: unknown,
+  serviceName: string
+): Promise<T> {
+  const options: RequestInit = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  };
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, options);
+  } catch {
+    try {
+      response = await fetch(`http://127.0.0.1:8000${path}`, options);
+    } catch {
+      throw new Error(`Unable to connect to the ${serviceName} service.`);
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail ||
+      errorData.error ||
+      `${serviceName} failed with HTTP ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function scanUploadedConfig(
+  files: File[]
+): Promise<ArtifactFindingsResponse> {
+  const uploadedFiles = await readUploadFiles(files);
+
+  return postUploadJson<ArtifactFindingsResponse>(
+    '/api/scan/config',
+    { files: uploadedFiles },
+    'Configuration scan'
+  );
+}
+
+export async function scanUploadedCode(
+  files: File[]
+): Promise<ArtifactFindingsResponse> {
+  const uploadedFiles = await readUploadFiles(files);
+
+  return postUploadJson<ArtifactFindingsResponse>(
+    '/api/scan/code',
+    { files: uploadedFiles },
+    'Source-code scan'
+  );
+}
+
+export async function scanUploadedCertificate(
+  file: File
+): Promise<UploadedCertificateResponse> {
+  const uploadedFiles = await readUploadFiles([file]);
+
+  return postUploadJson<UploadedCertificateResponse>(
+    '/api/scan/cert',
+    uploadedFiles[0],
+    'Certificate scan'
+  );
 }

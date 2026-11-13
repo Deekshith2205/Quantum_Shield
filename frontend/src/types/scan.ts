@@ -532,6 +532,60 @@ export type ApiError = {
   target_domain?: string;
 };
 
+
+export type NormalizedFinding = {
+  rule_id: string;
+  title: string;
+  value: string;
+  role: string;
+  source: string;
+  source_file?: string | null;
+  source_line?: number | null;
+  evidence_status: string;
+  severity: string;
+  risk: string;
+  message: string;
+  recommendation: string;
+  system_id?: string | null;
+  asset_id?: string | null;
+  layer?: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type ArtifactFindingsResponse = {
+  scan_status: 'SUCCESS';
+  files_scanned: number;
+  finding_count: number;
+  findings: NormalizedFinding[];
+};
+
+export type UploadedCertificateInfo = {
+  subject_cn: string | null;
+  subject_org: string | null;
+  subject_alt_names: string[];
+  issuer_cn: string | null;
+  issuer_org: string | null;
+  serial_number: string;
+  fingerprint_sha256: string;
+  not_valid_before: string;
+  not_valid_after: string;
+  days_remaining: number;
+  is_expired: boolean;
+  public_key_algorithm: string;
+  key_size_bits: number | null;
+  curve_name: string | null;
+  signature_algorithm: string;
+  signature_hash_algorithm: string | null;
+};
+
+export type UploadedCertificateResponse = {
+  scan_status: 'SUCCESS';
+  source: 'UPLOADED_CERTIFICATE';
+  source_file: string;
+  evidence_status: 'OBSERVED';
+  certificate: UploadedCertificateInfo;
+};
+
 // ==============================================================================
 // PHASE 4C: WHAT-IF POST-QUANTUM MIGRATION SIMULATOR TYPES
 // ==============================================================================
