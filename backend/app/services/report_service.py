@@ -131,10 +131,22 @@ def build_complete_json_report(system_id: str) -> CompleteAssessmentReport:
     chain = profile.cryptography.key_chain if profile.cryptography else None
     key_chain_dict = {
         "overall_status": risk.key_protection.status,
-        "tier_1_data_encryption": chain.data_encryption if chain else "AES-256",
-        "tier_2_key_wrapping": chain.key_wrapping if chain else "RSA-2048",
-        "tier_3_key_storage": chain.key_storage if chain else "HSM",
-        "tier_4_authentication": chain.authentication if chain else "RSA-2048",
+        "tier_1_data_encryption": (
+            (chain.data_encryption or "Not specified")
+            if chain else "Not specified"
+        ),
+        "tier_2_key_wrapping": (
+            (chain.key_wrapping or "Not specified")
+            if chain else "Not specified"
+        ),
+        "tier_3_key_storage": (
+            (chain.key_storage or "Not specified")
+            if chain else "Not specified"
+        ),
+        "tier_4_authentication": (
+            (chain.authentication or "Not specified")
+            if chain else "Not specified"
+        ),
         "weak_links": risk.key_protection.weak_links,
         "primary_dependencies": risk.key_protection.primary_migration_dependencies,
     }
@@ -201,15 +213,41 @@ def build_complete_json_report(system_id: str) -> CompleteAssessmentReport:
     }
 
     # 14. What-If Results (Pre-computed preview of PQC migration)
-    simulated_target = "ML-KEM-768" if "RSA" in (chain.key_wrapping if chain else "RSA") else "X25519MLKEM768"
+    current_wrapping = chain.key_wrapping if chain else None
+
+    if current_wrapping and "RSA" in current_wrapping.upper():
+        simulated_target = "ML-KEM-768"
+        what_if_explanation = (
+            "Simulation assumes the declared RSA key-wrapping mechanism "
+            "is replaced with NIST FIPS 203 ML-KEM-768."
+        )
+    elif current_wrapping:
+        simulated_target = "X25519MLKEM768"
+        what_if_explanation = (
+            "Simulation proposes hybrid post-quantum key establishment. "
+            "Validate compatibility with the currently declared mechanism."
+        )
+    else:
+        simulated_target = "ML-KEM-768 (pending algorithm verification)"
+        what_if_explanation = (
+            "The current key-wrapping algorithm is not specified. "
+            "ML-KEM-768 is an illustrative migration target; verify the "
+            "deployed mechanism before treating quantum risk as resolved."
+        )
+
     what_if_dict = {
         "status": "SIMULATED",
         "target_replacement": simulated_target,
         "baseline_priority_score": risk.priority_score,
         "projected_priority_score": max(20, risk.priority_score - 45),
         "projected_priority_band": "P2" if risk.priority_score > 60 else "P3",
-        "quantum_risk_resolved": "Key Wrapping Shor factoring risk resolved with NIST FIPS 203 ML-KEM-768.",
-        "remaining_dependencies": ["HSM firmware certification (FIPS 140-3)"],
+        "quantum_risk_resolved": what_if_explanation,
+        "remaining_dependencies": [
+            "HSM firmware certification (FIPS 140-3)",
+            "Verify deployed key-wrapping algorithm and internal configuration",
+        ] if not current_wrapping else [
+            "HSM firmware certification (FIPS 140-3)"
+        ],
     }
 
     # 15. Report Metadata

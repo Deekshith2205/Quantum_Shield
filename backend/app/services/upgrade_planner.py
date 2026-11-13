@@ -38,9 +38,10 @@ SYSTEM_CONFIG_MAP = {
     "BANK-PROF-NET-BANKING": PROJECT_ROOT / "backend/sample_data/banking/net_banking",
     "BANK-PROF-PAYMENT-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/payment_gateway",
     "BANK-PROF-ATM-NETWORK": PROJECT_ROOT / "backend/sample_data/banking/atm",
-    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/interbank",
+    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/kyc_vault",
     "BANK-PROF-UPI": PROJECT_ROOT / "backend/sample_data/banking/upi_backend",
     "BANK-PROF-ADMIN-VPN": PROJECT_ROOT / "backend/sample_data/banking/admin_vpn",
+    "BANK-PROF-INTERBANK-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/interbank",
 }
 
 
@@ -50,7 +51,7 @@ SYSTEM_CODE_MAP = {
     "BANK-PROF-NET-BANKING": PROJECT_ROOT / "backend/sample_data/banking/net_banking/src",
     "BANK-PROF-PAYMENT-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/payment_gateway/src",
     "BANK-PROF-ATM-NETWORK": PROJECT_ROOT / "backend/sample_data/banking/atm/src",
-    "BANK-PROF-KYC-DB": PROJECT_ROOT / "backend/sample_data/banking/interbank/src",
+    "BANK-PROF-INTERBANK-GATEWAY": PROJECT_ROOT / "backend/sample_data/banking/interbank/src",
 }
 
 
@@ -125,12 +126,26 @@ def generate_ranked_upgrade_plan(
             top_findings = [f.title for f in unified_findings[:2]]
 
         # Key Protection Chain Posture Summary
+        # Missing configuration is not evidence of a vulnerable algorithm.
         chain = p.cryptography.key_chain if p.cryptography else None
+
         chain_summary = {
-            "data_encryption": chain.data_encryption if chain else "AES-256",
-            "key_wrapping": chain.key_wrapping if chain else "RSA-2048",
-            "key_storage": chain.key_storage if chain else "HSM",
-            "authentication": chain.authentication if chain else "RSA-2048",
+            "data_encryption": (
+                chain.data_encryption or "Not specified"
+                if chain else "Not specified"
+            ),
+            "key_wrapping": (
+                chain.key_wrapping or "Not specified"
+                if chain else "Not specified"
+            ),
+            "key_storage": (
+                chain.key_storage or "Not specified"
+                if chain else "Not specified"
+            ),
+            "authentication": (
+                chain.authentication or "Not specified"
+                if chain else "Not specified"
+            ),
         }
 
         # Evidence gaps extraction

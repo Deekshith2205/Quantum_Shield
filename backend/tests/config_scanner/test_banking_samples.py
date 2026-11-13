@@ -1,4 +1,4 @@
-"""Integration tests for all 7 Banking Sample Environments.
+"""Integration tests for all 8 Banking Sample Environments.
 Verifies cryptographic inventory extraction, evidence provenance, and source immutability.
 """
 
@@ -18,7 +18,7 @@ def scanner():
     return BankingConfigScanner(root_dir=SAMPLE_DIR)
 
 
-def test_scan_all_seven_banking_systems(scanner):
+def test_scan_all_eight_banking_systems(scanner):
     results = scanner.scan_all_banking_samples(SAMPLE_DIR)
     expected_systems = {
         "net_banking",
@@ -27,7 +27,8 @@ def test_scan_all_seven_banking_systems(scanner):
         "core_banking",
         "interbank",
         "atm",
-        "admin_vpn"
+        "admin_vpn",
+        "kyc_vault",
     }
     assert set(results.keys()) == expected_systems
 

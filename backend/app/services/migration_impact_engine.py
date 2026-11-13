@@ -33,7 +33,12 @@ def evaluate_migration_impact(asset: BankingAsset) -> MigrationImpactAssessment:
             "High-throughput transactional rail with strict sub-second SLA (< 200ms). "
             "Additional handshake round-trips or computation overhead directly risk transaction timeouts."
         )
-    elif system_type in [BankingAssetType.NET_BANKING_PORTAL, BankingAssetType.MOBILE_BANKING_API, BankingAssetType.CORE_BANKING]:
+    elif system_type in [
+    BankingAssetType.NET_BANKING_PORTAL,
+    BankingAssetType.MOBILE_BANKING_API,
+    BankingAssetType.CORE_BANKING,
+    BankingAssetType.INTER_BANK_GATEWAY,
+    ]:
         lat_sens = "MEDIUM"
         lat_rat = "Interactive user session and account inquiry rail; tolerant of standard TLS negotiation latency (50-100ms overhead)."
     else:
@@ -48,7 +53,11 @@ def evaluate_migration_impact(asset: BankingAsset) -> MigrationImpactAssessment:
             "Network payload fragmentation risk on constrained ISO 8583 packet buffers and low-bandwidth POS/ATM links "
             "due to ML-DSA signature expansion (3.3 KB vs 256 bytes for ECDSA)."
         )
-    elif system_type in [BankingAssetType.NET_BANKING_PORTAL, BankingAssetType.MOBILE_BANKING_API]:
+    elif system_type in [
+    BankingAssetType.NET_BANKING_PORTAL,
+    BankingAssetType.MOBILE_BANKING_API,
+    BankingAssetType.INTER_BANK_GATEWAY,
+    ]:
         pqc_size = "MEDIUM"
         pqc_rat = "Handshake packet expansion across mobile cellular connections requires dual-record TLS frame tuning."
     else:

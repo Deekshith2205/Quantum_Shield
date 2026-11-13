@@ -1,4 +1,4 @@
-"""Synthetic Banking System Profiles & Configuration Catalog.
+﻿"""Synthetic Banking System Profiles & Configuration Catalog.
 Phase 4A - Representative Banking Systems & Configuration Evidence Model
 
 DISCLAIMER:
@@ -640,8 +640,670 @@ SYNTHETIC_BANKING_PROFILES: List[BankingAsset] = [
             "risk_vector": "3DES_DEPRECATION_AND_SNDL",
         },
     ),
-]
 
+    # --------------------------------------------------------------------------
+    # Profile 6: UPI Payment Service
+    # --------------------------------------------------------------------------
+    BankingAsset(
+        id="BANK-PROF-UPI",
+        name="UPI Payment Service",
+        asset_type=BankingAssetType.UPI_PAYMENT_SERVICE,
+        system_type=BankingAssetType.UPI_PAYMENT_SERVICE,
+        description=(
+            "Synthetic instant payment switch using hybrid post-quantum "
+            "key establishment and ML-DSA API token signing."
+        ),
+        criticality=AssetCriticality.CRITICAL,
+        data_sensitivity=DataSensitivity.HIGHLY_SENSITIVE,
+        exposure=AssetExposure.PARTNER,
+        data_lifetime=DataLifetime.SHORT,
+        trust_zone=TrustZone.APPLICATION,
+        migration_effort=MigrationEffort.MEDIUM,
+        tags=[
+            "upi",
+            "instant-payments",
+            "pqc-hybrid",
+            "ml-kem",
+            "ml-dsa",
+            "kms",
+            "critical",
+        ],
+        cryptography=CryptoConfiguration(
+            tls_versions=["TLSv1.3"],
+            cipher_suites=["TLS_AES_256_GCM_SHA384"],
+            key_exchange="X25519MLKEM768",
+            certificates=[
+                "Synthetic UPI Gateway Certificate, ECDSA-P256, SHA256withECDSA"
+            ],
+            signature_algorithm="SHA256withECDSA",
+            certificate_key_algorithm="ECC",
+            certificate_key_size=256,
+            data_encryption_algorithm="AES-256-GCM",
+            key_wrapping_algorithm="ML-KEM-768",
+            key_storage="KMS",
+            kms_or_hsm="AWS KMS",
+            key_chain=KeyProtectionChain(
+                data_encryption="AES-256-GCM",
+                key_wrapping="ML-KEM-768",
+                key_storage="AWS KMS",
+                authentication="ECDSA-P256 certificate; ML-DSA-65 API token signing",
+            ),
+        ),
+        key_management={
+            "storage_type": "KMS",
+            "provider": "AWS KMS",
+            "rotation_interval_days": 90,
+            "key_wrapping_algorithm": "ML-KEM-768",
+            "data_encryption_algorithm": "AES-256-GCM",
+        },
+        authentication={
+            "transport_authentication": "Mutual TLS with peer verification",
+            "certificate_authentication": "ECDSA-P256",
+            "api_token_signing": "ML-DSA-65",
+        },
+        evidence_items=[
+            EvidenceItem(
+                id="EV-UPI-01",
+                control="Transport Protocol",
+                value="TLS 1.3",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description="Synthetic UPI switch configuration specifies TLS 1.3.",
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-UPI-02",
+                control="Hybrid Key Exchange",
+                value="X25519MLKEM768",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "Configured hybrid X25519 and ML-KEM-768 key establishment."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-UPI-03",
+                control="Classical Key Exchange Fallback",
+                value="Classical fallback enabled",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The synthetic PQC pilot permits fallback to classical "
+                    "key exchange; migration policy must evaluate this fallback."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-UPI-04",
+                control="TLS Certificate Signature",
+                value="ECDSA-P256 with SHA256",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The configured gateway certificate still uses a classical "
+                    "ECDSA signature."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-UPI-05",
+                control="API Token Signing",
+                value="ML-DSA-65",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "API authentication configuration specifies ML-DSA-65 "
+                    "token signing."
+                ),
+                layer=SecurityLayer.API_GATEWAY,
+            ),
+            EvidenceItem(
+                id="EV-UPI-06",
+                control="Key Wrapping",
+                value="ML-KEM-768",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "UPI key management configuration specifies ML-KEM-768 "
+                    "for key wrapping."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-UPI-07",
+                control="Data Encryption",
+                value="AES-256-GCM",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description="Configured symmetric data encryption uses AES-256-GCM.",
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-UPI-08",
+                control="Key Storage",
+                value="AWS KMS",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description="Synthetic UPI key management configuration specifies AWS KMS.",
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+        ],
+        evidence_gaps=[
+            EvidenceGap(
+                gap_type=EvidenceGapType.KMS_USAGE,
+                layer=SecurityLayer.DATA_AND_KEYS,
+                control="KMS Key Policy and Permissions",
+                description=(
+                    "The fixture identifies AWS KMS but does not establish "
+                    "the effective key policy, permissions, or operational controls."
+                ),
+                evidence_needed="KMS key policy export and access-control audit",
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.KEY_ROTATION,
+                layer=SecurityLayer.DATA_AND_KEYS,
+                control="Key Rotation Enforcement",
+                description=(
+                    "A configured 90-day rotation interval does not independently "
+                    "prove that rotation is enforced and completed."
+                ),
+                evidence_needed="KMS key rotation status and rotation history",
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.INTERNAL_MTLS,
+                layer=SecurityLayer.SERVICE_TO_SERVICE,
+                control="Internal Service Identity",
+                description=(
+                    "The supplied fixtures establish gateway mTLS settings but "
+                    "do not establish all internal service-to-service identities."
+                ),
+                evidence_needed="Service mesh identity and mutual TLS configuration",
+            ),
+        ],
+        metadata={
+            "synthetic_profile_version": "1.0",
+            "pqc_posture": "PARTIALLY_PQC_READY",
+            "pqc_strengths": ["ML-KEM-768", "ML-DSA-65"],
+            "remaining_classical_controls": [
+                "ECDSA-P256 certificate signature",
+                "Classical key exchange fallback",
+            ],
+            "risk_note": (
+                "Hybrid key establishment and PQC API signing do not make "
+                "the complete system quantum-safe."
+            ),
+        },
+    ),
+    # --------------------------------------------------------------------------
+    # Profile 7: Administrative VPN & Bastion
+    # --------------------------------------------------------------------------
+    BankingAsset(
+        id="BANK-PROF-ADMIN-VPN",
+        name="Administrative VPN & Bastion",
+        asset_type=BankingAssetType.ADMIN_PORTAL,
+        system_type=BankingAssetType.ADMIN_PORTAL,
+        description=(
+            "Restricted administrative access gateway and VPN bastion "
+            "protecting privileged access to banking infrastructure."
+        ),
+        criticality=AssetCriticality.HIGH,
+        data_sensitivity=DataSensitivity.HIGHLY_SENSITIVE,
+        exposure=AssetExposure.RESTRICTED,
+        data_lifetime=DataLifetime.SHORT,
+        trust_zone=TrustZone.ADMIN,
+        migration_effort=MigrationEffort.HIGH,
+        tags=[
+            "admin-vpn",
+            "bastion",
+            "privileged-access",
+            "fido2",
+            "smartcard",
+            "classical-cryptography",
+        ],
+        cryptography=CryptoConfiguration(
+            tls_versions=["TLSv1.3"],
+            cipher_suites=["TLS_AES_256_GCM_SHA384"],
+            key_exchange="ECDHE",
+            certificates=["ECDSA-P384 / SHA384withECDSA"],
+            signature_algorithm="SHA384withECDSA",
+            certificate_key_algorithm="ECDSA",
+            certificate_key_size=384,
+            data_encryption_algorithm="AES-256-GCM",
+            key_wrapping_algorithm=None,
+            key_storage="PKCS11_SMARTCARD",
+            kms_or_hsm=None,
+            key_chain=KeyProtectionChain(
+                data_encryption="AES-256-GCM",
+                key_wrapping=None,
+                key_storage="PKCS11_SMARTCARD",
+                authentication="ECDSA-P384 / FIDO2",
+            ),
+        ),
+        key_management={
+            "storage_type": "PKCS11_SMARTCARD",
+            "key_rotation_days": 90,
+            "hardware_authenticator": "FIDO2",
+        },
+        authentication={
+            "operator_auth": "FIDO2 hardware token",
+            "mfa_required": True,
+            "maximum_session_hours": 8,
+            "client_certificate_required": True,
+        },
+        evidence_items=[
+            EvidenceItem(
+                id="EV-ADMIN-VPN-01",
+                control="VPN Transport Protocol",
+                value="TLS 1.3 / TLS_AES_256_GCM_SHA384",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied VPN configuration specifies TLS 1.3 "
+                    "with AES-256-GCM."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-ADMIN-VPN-02",
+                control="TLS Key Exchange",
+                value="ECDHE / secp384r1 / X25519",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The VPN configuration specifies classical elliptic-curve "
+                    "key exchange groups."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-ADMIN-VPN-03",
+                control="Certificate Signature",
+                value="ECDSA-P384 / SHA384withECDSA",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The configured server certificate uses a classical "
+                    "ECDSA P-384 signature."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-ADMIN-VPN-04",
+                control="VPN Data Encryption",
+                value="AES-256-GCM / ChaCha20-Poly1305",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied configuration lists AES-256-GCM and "
+                    "ChaCha20-Poly1305 data ciphers."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-ADMIN-VPN-05",
+                control="Private Key Storage",
+                value="PKCS#11 Smartcard",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The VPN configuration specifies PKCS#11 smartcard "
+                    "key storage."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-ADMIN-VPN-06",
+                control="Privileged User MFA",
+                value="FIDO2 hardware token / MFA required",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The synthetic bastion configuration declares mandatory "
+                    "FIDO2 hardware-token MFA."
+                ),
+                layer=SecurityLayer.ADMINISTRATIVE,
+            ),
+            EvidenceItem(
+                id="EV-ADMIN-VPN-07",
+                control="Privileged Session Limit",
+                value="Maximum session duration: 8 hours",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied bastion configuration specifies an "
+                    "eight-hour maximum session duration."
+                ),
+                layer=SecurityLayer.ADMINISTRATIVE,
+            ),
+        ],
+        evidence_gaps=[
+            EvidenceGap(
+                gap_type=EvidenceGapType.PRIVILEGED_ACCESS_POLICY,
+                layer=SecurityLayer.ADMINISTRATIVE,
+                control="Privileged Access Enforcement",
+                description=(
+                    "Configuration declares restricted administrative access, "
+                    "but effective enforcement and access-review practices "
+                    "are not independently verified."
+                ),
+                evidence_needed=(
+                    "Privileged access policy, access review records, "
+                    "and bastion authorization logs"
+                ),
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.MFA_POLICY,
+                layer=SecurityLayer.ADMINISTRATIVE,
+                control="FIDO2 MFA Enforcement",
+                description=(
+                    "FIDO2 MFA is configured, but actual enforcement across "
+                    "all privileged access paths is not independently verified."
+                ),
+                evidence_needed=(
+                    "Identity provider policy export and privileged "
+                    "authentication audit logs"
+                ),
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.INTERNAL_CERTIFICATE_POLICY,
+                layer=SecurityLayer.EDGE,
+                control="Administrative Certificate Lifecycle",
+                description=(
+                    "The certificate algorithm is identified, but certificate "
+                    "issuance, renewal, revocation, and lifecycle enforcement "
+                    "are not established."
+                ),
+                evidence_needed=(
+                    "Certificate authority policy, certificate inventory, "
+                    "and revocation records"
+                ),
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.KEY_ROTATION,
+                layer=SecurityLayer.DATA_AND_KEYS,
+                control="VPN Key Rotation Enforcement",
+                description=(
+                    "A configured 90-day rotation interval does not "
+                    "independently establish successful key rotation."
+                ),
+                evidence_needed="Key rotation status and historical audit records",
+            ),
+        ],
+        metadata={
+            "synthetic_profile_version": "1.0",
+            "pqc_posture": "CLASSICAL_CRYPTOGRAPHY",
+            "remaining_classical_controls": [
+                "ECDHE key exchange",
+                "ECDSA-P384 certificate signature",
+                "Classical SSH key exchange and host-key algorithms",
+            ],
+            "risk_note": (
+                "The supplied configuration contains no evidenced PQC "
+                "key-establishment or signature algorithms. AES-256-GCM "
+                "remains an appropriate symmetric encryption choice."
+            ),
+        },
+    ),
+    # --------------------------------------------------------------------------
+    # Profile 8: Inter-bank Gateway
+    # --------------------------------------------------------------------------
+    BankingAsset(
+        id="BANK-PROF-INTERBANK-GATEWAY",
+        name="Bilateral Inter-bank Gateway",
+        asset_type=BankingAssetType.INTER_BANK_GATEWAY,
+        system_type=BankingAssetType.INTER_BANK_GATEWAY,
+        description=(
+            "Synthetic bilateral inter-bank and SWIFT-style gateway "
+            "supporting ISO 20022 message exchange and protected settlement "
+            "communications between financial institutions."
+        ),
+        criticality=AssetCriticality.CRITICAL,
+        data_sensitivity=DataSensitivity.HIGHLY_SENSITIVE,
+        exposure=AssetExposure.PARTNER,
+        data_lifetime=DataLifetime.LONG,
+        trust_zone=TrustZone.APPLICATION,
+        migration_effort=MigrationEffort.VERY_HIGH,
+        tags=[
+            "interbank",
+            "swift",
+            "iso20022",
+            "rsa-4096",
+            "hsm",
+            "bilateral-gateway",
+            "hybrid-migration-planned",
+        ],
+        cryptography=CryptoConfiguration(
+            tls_versions=["TLSv1.3", "TLSv1.2"],
+            cipher_suites=[
+                "TLS_AES_256_GCM_SHA384",
+                "ECDHE-RSA-AES256-GCM-SHA384",
+            ],
+            key_exchange="ECDHE",
+            certificates=["RSA-4096 / SHA384withRSA"],
+            signature_algorithm="SHA384withRSA",
+            certificate_key_algorithm="RSA",
+            certificate_key_size=4096,
+            data_encryption_algorithm="AES-256-GCM",
+            key_wrapping_algorithm="RSA-4096",
+            key_storage="HSM",
+            kms_or_hsm="Utimaco SecurityServer Se-Series",
+            key_chain=KeyProtectionChain(
+                data_encryption="AES-256-GCM",
+                key_wrapping="RSA-4096",
+                key_storage="HSM",
+                authentication="RSA-4096 / SHA-384",
+            ),
+        ),
+        key_management={
+            "storage_type": "HSM",
+            "appliance": "Utimaco SecurityServer Se-Series",
+            "key_wrapping_algorithm": "RSA-4096",
+            "signing_algorithm": "RSA-4096 / SHA-384",
+        },
+        authentication={
+            "transport_authentication": "Mutual TLS",
+            "peer_certificate_verification": True,
+            "ocsp_stapling": True,
+            "crl_checking": True,
+        },
+        evidence_items=[
+            EvidenceItem(
+                id="EV-INTERBANK-01",
+                control="Network Transport Protocols",
+                value="TLS 1.2 / TLS 1.3",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied inter-bank gateway configuration "
+                    "specifies TLS 1.2 and TLS 1.3."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-02",
+                control="Transport Key Exchange",
+                value="ECDHE / secp384r1",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The configuration specifies classical ECDHE "
+                    "using the secp384r1 elliptic curve."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-03",
+                control="Mutual TLS",
+                value="Required; peer certificate verification enabled",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied configuration declares mutual TLS "
+                    "and peer certificate verification."
+                ),
+                layer=SecurityLayer.EDGE,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-04",
+                control="Message Signing",
+                value="RSA-4096 / SHA-384",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "Inter-bank message security configuration specifies "
+                    "RSA-4096 signing with SHA-384."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-05",
+                control="Key Wrapping",
+                value="RSA-4096",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied message-security configuration specifies "
+                    "RSA-4096 key wrapping."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-06",
+                control="Hardware Key Protection",
+                value="Utimaco SecurityServer Se-Series HSM",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The supplied configuration identifies HSM-backed "
+                    "key storage."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-07",
+                control="Payload Encryption",
+                value="AES-256-GCM",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "Inter-bank payload encryption is configured "
+                    "with AES-256-GCM."
+                ),
+                layer=SecurityLayer.DATA_AND_KEYS,
+            ),
+            EvidenceItem(
+                id="EV-INTERBANK-08",
+                control="PQC Migration Planning",
+                value="HYBRID_PLANNED",
+                source=EvidenceSource.CONFIGURATION_FILE,
+                observability=ObservabilityState.OBSERVED,
+                confidence="HIGH",
+                description=(
+                    "The configuration records a planned hybrid PQC "
+                    "migration profile; it does not establish deployed "
+                    "post-quantum algorithms."
+                ),
+                layer=SecurityLayer.ADMINISTRATIVE,
+            ),
+        ],
+        evidence_gaps=[
+            EvidenceGap(
+                gap_type=EvidenceGapType.HSM_USAGE,
+                layer=SecurityLayer.DATA_AND_KEYS,
+                control="HSM Operational Attestation",
+                description=(
+                    "The fixture identifies an HSM appliance, but does not "
+                    "independently establish its live configuration, "
+                    "attestation, or key-isolation enforcement."
+                ),
+                evidence_needed=(
+                    "HSM configuration export, attestation report, "
+                    "and key custody audit"
+                ),
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.KEY_WRAPPING,
+                layer=SecurityLayer.DATA_AND_KEYS,
+                control="Post-Quantum Key Wrapping Migration",
+                description=(
+                    "RSA-4096 key wrapping remains classical. The planned "
+                    "hybrid migration does not establish deployed ML-KEM "
+                    "or hybrid key establishment."
+                ),
+                evidence_needed=(
+                    "Approved migration design, ML-KEM integration evidence, "
+                    "and interoperability test results"
+                ),
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.INTERNAL_CERTIFICATE_POLICY,
+                layer=SecurityLayer.EDGE,
+                control="Bilateral Certificate Lifecycle",
+                description=(
+                    "Mutual TLS is configured, but bilateral certificate "
+                    "issuance, renewal, revocation, and trust-anchor "
+                    "governance are not independently established."
+                ),
+                evidence_needed=(
+                    "Bilateral PKI policy, certificate inventory, "
+                    "and revocation validation records"
+                ),
+            ),
+            EvidenceGap(
+                gap_type=EvidenceGapType.KEY_ROTATION,
+                layer=SecurityLayer.DATA_AND_KEYS,
+                control="Inter-bank Signing and Wrapping Key Rotation",
+                description=(
+                    "The supplied fixtures do not establish signing-key "
+                    "and wrapping-key rotation enforcement."
+                ),
+                evidence_needed=(
+                    "HSM key lifecycle policy and signing/wrapping "
+                    "key rotation audit records"
+                ),
+            ),
+        ],
+        metadata={
+            "synthetic_profile_version": "1.0",
+            "pqc_posture": "HYBRID_PLANNED",
+            "remaining_classical_controls": [
+                "ECDHE key exchange",
+                "RSA-4096 message signatures",
+                "RSA-4096 key wrapping",
+            ],
+            "risk_note": (
+                "Hybrid PQC migration is planned but not evidenced as deployed. "
+                "RSA-based signatures and key wrapping remain quantum-vulnerable "
+                "in a sufficiently capable cryptographically relevant "
+                "quantum-computing scenario. AES-256-GCM remains an appropriate "
+                "symmetric encryption choice."
+            ),
+        },
+    ),
+]
 
 def get_synthetic_banking_profiles() -> List[BankingAsset]:
     """Returns the full catalog of representative synthetic banking system profiles."""

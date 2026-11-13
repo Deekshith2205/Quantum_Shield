@@ -1,3 +1,4 @@
+
 """Unit and integration tests for Phase 4A - Banking System Profiles & Configuration Evidence Model.
 
 Tests cover:
@@ -8,7 +9,7 @@ Tests cover:
 - KeyProtectionChain model (Data Encryption -> Key Wrapping -> Key Storage -> Authentication).
 - CryptoConfiguration normalized representation.
 - BankingAsset / BankingSystemProfile validation and invariants.
-- 5 synthetic banking profiles catalog and disclaimer.
+- 8 synthetic banking profiles catalog and disclaimer.
 - API endpoints: GET /api/banking/profiles and GET /api/banking/profiles/{id}.
 - Asset association with live scans: observed TLS telemetry integrity preserved.
 """
@@ -281,9 +282,9 @@ def test_key_protection_chain_models():
 # ============================================================================
 
 def test_synthetic_profiles_catalog_contents():
-    """Verifies that all 5 required representative banking profiles exist with complete metadata."""
+    """Verifies that all 8 required representative banking profiles exist with complete metadata."""
     profiles = get_synthetic_banking_profiles()
-    assert len(profiles) == 5
+    assert len(profiles) == 8
 
     profile_ids = [p.id for p in profiles]
     expected_ids = [
@@ -292,6 +293,9 @@ def test_synthetic_profiles_catalog_contents():
         "BANK-PROF-KYC-DB",
         "BANK-PROF-NET-BANKING",
         "BANK-PROF-ATM-NETWORK",
+        "BANK-PROF-UPI",
+        "BANK-PROF-ADMIN-VPN",
+        "BANK-PROF-INTERBANK-GATEWAY",
     ]
     for exp_id in expected_ids:
         assert exp_id in profile_ids, f"Missing profile {exp_id}"
@@ -347,13 +351,13 @@ def test_get_synthetic_profile_by_id():
 # ============================================================================
 
 def test_api_get_banking_profiles():
-    """Tests GET /api/banking/profiles returns all 5 synthetic profiles."""
+    """Tests GET /api/banking/profiles returns all 8 synthetic profiles."""
     DEFAULT_RATE_LIMITER.reset()
     response = client.get("/api/banking/profiles")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 5
+    assert len(data) == 8
 
     ids = [item["id"] for item in data]
     assert "BANK-PROF-PAYMENT-GATEWAY" in ids
@@ -361,6 +365,9 @@ def test_api_get_banking_profiles():
     assert "BANK-PROF-KYC-DB" in ids
     assert "BANK-PROF-NET-BANKING" in ids
     assert "BANK-PROF-ATM-NETWORK" in ids
+    assert "BANK-PROF-UPI" in ids
+    assert "BANK-PROF-ADMIN-VPN" in ids
+    assert "BANK-PROF-INTERBANK-GATEWAY" in ids
 
     # Check schema fields on first profile
     first = data[0]

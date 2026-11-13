@@ -15,7 +15,19 @@ def test_api_banking_upgrade_plan_endpoint():
     assert resp.status_code == 200
     data = resp.json()
 
-    assert data["total_systems"] >= 5
+    expected_system_ids = {
+        "BANK-PROF-PAYMENT-GATEWAY",
+        "BANK-PROF-CORE-BANKING",
+        "BANK-PROF-KYC-DB",
+        "BANK-PROF-NET-BANKING",
+        "BANK-PROF-ATM-NETWORK",
+        "BANK-PROF-UPI",
+        "BANK-PROF-ADMIN-VPN",
+        "BANK-PROF-INTERBANK-GATEWAY",
+    }
+
+    assert data["total_systems"] == 8
+    assert {item["system_id"] for item in data["queue"]} == expected_system_ids
     assert "queue" in data
     assert len(data["queue"]) == data["total_systems"]
     assert data["queue"][0]["rank"] == 1
